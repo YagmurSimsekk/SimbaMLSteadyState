@@ -1,0 +1,2 @@
+include versioneer.py
+include simba_ml/_version.py

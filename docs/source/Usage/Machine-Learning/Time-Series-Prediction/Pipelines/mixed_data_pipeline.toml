@@ -1,0 +1,96 @@
+# Define the models to be used for training
+[[models]]
+id = "KerasDenseNeuralNetworkTransferLearning"
+normalizer = true
+[models.training_params]
+epochs = 10
+patience = 5
+batch_size = 32
+validation_split = 0.2
+verbose = 0
+[models.archictecture_params]
+units = [32, 32]
+activation = "relu"
+
+[[models]]
+id = "PytorchLightningDenseNeuralNetwork"
+normalizer = true
+[models.training_params]
+epochs = 10
+patience = 5
+batch_size = 32
+validation_split = 0.2
+verbose = 0
+[models.archictecture_params]
+units = [32, 32]
+activation = "relu"
+
+[[models]]
+id = "DecisionTreeRegressor"
+[models.model_params]
+criterion = "squared_error" # "squared_error", "absolute_error"
+splitter ="best" # "best", "random"
+
+[[models]]
+id = "LinearRegressor"
+[models.model_params]
+fit_intercept= true
+n_jobs = 1 # TODO: What is good value here
+positive = false
+
+[[models]]
+id = "NearestNeighborsRegressor"
+[models.model_params]
+n_neighbors = 5
+weights = "uniform" # "uniform", "distance"
+
+[[models]]
+id = "RandomForestRegressor"
+[models.model_params]
+n_estimators = 100
+max_depth = 10
+min_samples_split = 2
+min_samples_leaf = 1
+min_weight_fraction_leaf = 0.0
+
+[[models]]
+id = "SVMRegressor"
+kernel = "linear" # "linear", "poly", "rbf", "sigmoid", "precomputed"
+
+# Define the metrics to be used for evaluating the model
+metrics = [
+  "r_square",
+  "mean_absolute_error",
+  "mean_squared_error",
+  "mean_absolute_percentage_error",
+  "root_mean_squared_error",
+  "normalized_root_mean_squared_error",
+]
+
+# Define data configurations
+[data]
+ratios = [1.0, 0.5] # >= 0.0
+observed = "path/to/observed/data"
+synthetic = "path/to/synthetic/data"
+split_axis = "vertical" # "vertical", "horizontal"
+test_split = 0.2 # [0, 1]
+
+# Define the time series configurations
+[data.time_series]
+input_features = ["Infected", "Recovered"]
+output_features = ["Infected", "Recovered"]
+input_length = 1
+output_length = 1
+
+# Define the plugins you wrote to use your own models
+plugins = [
+  "tests.example_plugin",
+  "simba_ml.prediction.time_series.models.keras",
+  "simba_ml.prediction.time_series.models.pytorch_lightning"
+]
+
+# If you include this section, the results will be logged to wandb
+# make sure to specify the right project and entity
+# [logging]
+# project = "your-wandb-project"
+# entity = "your-wandb-entity"

@@ -1,0 +1,49 @@
+# Define the models to be used for training
+[[models]]
+id = "KerasDenseNeuralNetworkTransferLearning"
+normalizer = true
+[models.training_params]
+epochs = 10
+patience = 5
+batch_size = 32
+validation_split = 0.2
+verbose = 0
+[models.archictecture_params]
+units = [32, 32]
+activation = "relu"
+
+# Define the metrics to be used for evaluating the model
+metrics = [
+  "r_square",
+  "mean_absolute_error",
+  "mean_squared_error",
+  "mean_absolute_percentage_error",
+  "root_mean_squared_error",
+  "normalized_root_mean_squared_error",
+]
+
+# Define data configurations
+[data]
+observed = "/tests/prediction/time_series/test_data/num_species_1/real/"
+synthetic = "/tests/prediction/time_series/test_data/num_species_1/simulated/"
+test_split = 0.2
+split_axis = "vertical"
+
+# Define the time series configurations
+[data.time_series]
+input_length = 1
+output_length = 1
+input_features = ["Infected", "Recovered"]
+output_features = ["Infected", "Recovered"]
+
+# Define the plugins you wrote to use your own models
+plugins = [
+  "tests.example_plugin",
+  "simba_ml.prediction.time_series.models.keras"
+]
+
+# If you include this section, the results will be logged to wandb
+# make sure to specify the right project and entity
+# [logging]
+# project = "your-wandb-project"
+# entity = "your-wandb-entity"

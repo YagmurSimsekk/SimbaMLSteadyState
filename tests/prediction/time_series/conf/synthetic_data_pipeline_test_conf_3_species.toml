@@ -1,0 +1,49 @@
+plugins = [
+  "tests.example_plugin",
+  "simba_ml.prediction.time_series.models.keras",
+  "simba_ml.prediction.time_series.models.pytorch_lightning"
+]
+
+metrics = [
+  "mean_absolute_error",
+  "mean_squared_error",
+  "mean_absolute_percentage_error"
+]
+
+[[models]]
+id = "KerasDenseNeuralNetwork"
+[models.training_params]
+epochs = 1
+
+[[models]]
+id = "PytorchLightningDenseNeuralNetwork"
+[models.training_params]
+epochs = 1
+
+[[models]]
+id = "DecisionTreeRegressor"
+
+[[models]]
+id = "LinearRegressor"
+
+[[models]]
+id = "NearestNeighborsRegressor"
+
+[[models]]
+id = "RandomForestRegressor"
+
+[[models]]
+id = "SVMRegressor"
+
+[data]
+synthetic = "/tests/prediction/time_series/test_data/num_species_3/simulated/"
+split_axis = "vertical"
+test_split = 0.2
+
+[data.time_series]
+input_features = ["8", "10", "21"]
+output_features = ["8", "10", "21"]
+input_length = 2
+output_length = 2
+
+

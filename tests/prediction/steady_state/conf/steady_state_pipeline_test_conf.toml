@@ -1,0 +1,18 @@
+plugins = [
+  "tests.example_plugin",
+  "simba_ml.prediction.time_series.models.keras"
+]
+
+metrics = [
+  "mean_absolute_error",
+  "mean_squared_error",
+  "mean_absolute_percentage_error"
+]
+
+[data]
+k_cross_validation = 1
+prediction_params = ["B"]
+real = "/tests/prediction/time_series/test_data/real/"
+simulated = "/tests/prediction/time_series/test_data/simulated/"
+ratios = [1.0, 0.5]
+test_split = 0.2
