@@ -1,21 +1,26 @@
+import pytest
+
 from simba_ml.simulation import derivative_noiser
 from simba_ml.simulation import distributions
 
 
-def test_no_deriv_noiser():
+@pytest.mark.parametrize(
+    "y,t", [([1, 2, 3], 2), ([1, 2, 3], 3), ([1, 2, 3, 4, 5], 3)]
+)
+def test_no_deriv_noiser(y, t):
     """Check that the `NoDerivNoiser` does not put any noise to the derivate."""
 
     def before(t, y, _kinetic_parameters):
         return tuple(v * t for v in y)
 
     after = derivative_noiser.NoDerivNoiser().noisify(before, 5)
-
-    y_t = [([1, 2, 3], 2), ([1, 2, 3], 3), ([1, 2, 3, 4, 5], 3)]
-    for y, t in y_t:
-        assert before(t, y, {}) == after(t, y, {})
+    assert before(t, y, {}) == after(t, y, {})
 
 
-def test_additional_deriv_noiser_with_sigma_equals_1():
+@pytest.mark.parametrize(
+    "y,t", [([1, 2, 3], 2), ([1, 2, 3], 3), ([1, 2, 3, 4, 5], 3)]
+)
+def test_additional_deriv_noiser_with_sigma_equals_1(y, t):
     """Check, that the `AdditiveDerivNoiser` puts Noise to the derivate."""
 
     def before(t, y, _kinetic_parameters):
@@ -24,9 +29,7 @@ def test_additional_deriv_noiser_with_sigma_equals_1():
     after = derivative_noiser.AdditiveDerivNoiser(
         distributions.NormalDistribution(0, 1)
     ).noisify(before, 5)
-    y_t = [([1, 2, 3], 2), ([1, 2, 3], 3), ([1, 2, 3, 4, 5], 3)]
-    for y, t in y_t:
-        assert before(t, y, {}) != after(t, y, {})
+    assert before(t, y, {}) != after(t, y, {})
 
 
 def test_additional_deriv_noiser_with_sigma_equals_0():
