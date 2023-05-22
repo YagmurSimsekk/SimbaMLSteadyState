@@ -13,7 +13,6 @@ import pandas as pd
 from simba_ml.prediction.time_series.data_loader import window_generator
 from simba_ml.prediction.time_series.models import model
 from simba_ml.prediction import normalizer
-from simba_ml.prediction.time_series.models import check_params
 from simba_ml.prediction.time_series.config import (
     time_series_config,
 )
@@ -151,7 +150,7 @@ class PytorchLightningModel(model.Model):
         )
 
         if self.model_params.finetuning:
-            check_params.check_funetuning_params(self.model_params)
+            check_funetuning_params(self.model_params)
             trainer = pl.Trainer(
                 max_epochs=self.model_params.training_params.finetuning_epochs,
                 log_every_n_steps=len(train_loader) // 2,
@@ -184,3 +183,23 @@ class PytorchLightningModel(model.Model):
         if self.model_params.normalize:
             prediction = self.normalizer.denormalize_prediction_data(prediction)
         return prediction
+
+
+def check_funetuning_params(
+    model_params: PytorchLightningModelConfig,
+) -> None:
+    """Checks whether all the required arguments for finetuning the model are set.
+
+    Args:
+        model_params: the model parameters to check.
+
+    Raises:
+        ValueError: if the model is not set to finetuning.
+    """
+    if model_params.finetuning and not (
+        model_params.training_params.finetuning_learning_rate
+        and model_params.training_params.finetuning_epochs
+    ):
+        raise ValueError(
+            "The model is set to finetuning but the finetuning learning rate or the finetuning epochs are not set."  # pylint: disable=line-too-long
+        )

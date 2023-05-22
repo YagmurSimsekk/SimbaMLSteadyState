@@ -84,17 +84,17 @@ class _DenseNeuralNetwork(pl.LightningModule):  # pylint: disable=too-many-ances
         )
 
     def configure_optimizers(self) -> torch.optim.Adam:
-        return (
-            torch.optim.Adam(
+        if (
+            self.model_params.finetuning
+            and self.model_params.training_params.finetuning_learning_rate
+        ):
+            return torch.optim.Adam(
                 self.parameters(),
                 lr=self.model_params.training_params.finetuning_learning_rate,
             )
-            if self.model_params.finetuning
-            and self.model_params.training_params.finetuning_learning_rate
-            else torch.optim.Adam(
-                self.parameters(),
-                lr=self.model_params.training_params.learning_rate,
-            )
+        return torch.optim.Adam(
+            self.parameters(),
+            lr=self.model_params.training_params.learning_rate,
         )
 
     def training_step(  # pylint: disable=arguments-differ
