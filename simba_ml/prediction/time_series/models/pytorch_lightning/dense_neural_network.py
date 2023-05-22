@@ -14,7 +14,6 @@ from simba_ml.prediction.time_series.models.pytorch_lightning import (
 from simba_ml.prediction.time_series.config import (
     time_series_config,
 )
-from simba_ml.prediction.time_series.models import check_params
 
 
 @dataclasses.dataclass

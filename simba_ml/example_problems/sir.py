@@ -11,7 +11,6 @@ from simba_ml.simulation import species
 from simba_ml.simulation import noisers
 
 # pylint: disable=unused-import; Should be used before merging.
-from simba_ml.simulation import constraints
 from simba_ml.simulation import distributions
 from simba_ml.simulation import sparsifier as sparsifier_module
 from simba_ml.simulation import kinetic_parameters as kinetic_parameters_module

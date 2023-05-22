@@ -11,7 +11,7 @@ def check_funetuning_params(
     """Checks whether all the required arguments for finetuning the model are set.
 
     Args:
-        model: the model to check.
+        model_params: the model parameters to check.
 
     Raises:
         ValueError: if the model is not set to finetuning.
@@ -21,5 +21,5 @@ def check_funetuning_params(
         and model_params.training_params.finetuning_epochs
     ):
         raise ValueError(
-            "The model is set to finetuning but the finetuning learning rate or the finetuning epochs are not set."
+            "The model is set to finetuning but the finetuning learning rate or the finetuning epochs are not set."  # pylint: disable=line-too-long
         )

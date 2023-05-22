@@ -80,7 +80,7 @@ def test_mixed_x_test_data_is_not_exported_when_no_export_path_is_provided():
 
 def test_mixed_x_test_data_is_exported_when_export_path_already_exists():
     export_path = "tests/prediction/time_series/test_data/export"
-    os.mkdir(os.path.join(os.getcwd(), export_path))
+    os.makedirs(os.path.join(os.getcwd(), export_path), exist_ok=True)
     cfg = data_config.DataConfig(
         synthetic="/tests/prediction/time_series/test_data/num_species_1/simulated/",  # pylint: disable=line-too-long
         time_series=time_series_config.TimeSeriesConfig(
