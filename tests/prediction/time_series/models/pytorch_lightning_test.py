@@ -42,7 +42,7 @@ def test_check_params_with_only_finetuning_set():
         finetuning=True,
     )
     with pytest.raises(ValueError):
-        pytorch_lightning_model.check_funetuning_params(cfg)
+        pytorch_lightning_model.check_finetuning_params(cfg)
 
 
 def test_check_params_finetuning_and_epochs_set():
@@ -51,7 +51,7 @@ def test_check_params_finetuning_and_epochs_set():
     )
     cfg.training_params.finetuning_epochs = 1
     with pytest.raises(ValueError):
-        pytorch_lightning_model.check_funetuning_params(cfg)
+        pytorch_lightning_model.check_finetuning_params(cfg)
 
 
 def test_check_params_finetuning_and_lr_set():
@@ -60,7 +60,7 @@ def test_check_params_finetuning_and_lr_set():
     )
     cfg.training_params.finetuning_learning_rate = 0.0001
     with pytest.raises(ValueError):
-        pytorch_lightning_model.check_funetuning_params(cfg)
+        pytorch_lightning_model.check_finetuning_params(cfg)
 
 
 def test_check_params_all_set_for_finetuning():
@@ -69,4 +69,4 @@ def test_check_params_all_set_for_finetuning():
     )
     cfg.training_params.finetuning_learning_rate = 0.0001
     cfg.training_params.finetuning_epochs = 1
-    pytorch_lightning_model.check_funetuning_params(cfg)
+    pytorch_lightning_model.check_finetuning_params(cfg)

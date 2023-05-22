@@ -150,7 +150,7 @@ class PytorchLightningModel(model.Model):
         )
 
         if self.model_params.finetuning:
-            check_funetuning_params(self.model_params)
+            check_finetuning_params(self.model_params)
             trainer = pl.Trainer(
                 max_epochs=self.model_params.training_params.finetuning_epochs,
                 log_every_n_steps=len(train_loader) // 2,
@@ -185,7 +185,7 @@ class PytorchLightningModel(model.Model):
         return prediction
 
 
-def check_funetuning_params(
+def check_finetuning_params(
     model_params: PytorchLightningModelConfig,
 ) -> None:
     """Checks whether all the required arguments for finetuning the model are set.
