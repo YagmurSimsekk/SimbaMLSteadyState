@@ -14,6 +14,7 @@ from simba_ml.prediction.time_series.models.pytorch_lightning import (
 from simba_ml.prediction.time_series.config import (
     time_series_config,
 )
+from simba_ml.prediction.time_series.models import check_params
 
 
 @dataclasses.dataclass
@@ -84,7 +85,18 @@ class _DenseNeuralNetwork(pl.LightningModule):  # pylint: disable=too-many-ances
         )
 
     def configure_optimizers(self) -> torch.optim.Adam:
-        return torch.optim.Adam(self.parameters(), lr=1e-3)
+        return (
+            torch.optim.Adam(
+                self.parameters(),
+                lr=self.model_params.training_params.finetuning_learning_rate,
+            )
+            if self.model_params.finetuning
+            and self.model_params.training_params.finetuning_learning_rate
+            else torch.optim.Adam(
+                self.parameters(),
+                lr=self.model_params.training_params.learning_rate,
+            )
+        )
 
     def training_step(  # pylint: disable=arguments-differ
         self,

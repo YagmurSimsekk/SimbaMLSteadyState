@@ -2,6 +2,7 @@
      pytorch lightning architecture."""
 import abc
 import dataclasses
+import typing
 
 import torch
 from torch import utils
@@ -12,6 +13,7 @@ import pandas as pd
 from simba_ml.prediction.time_series.data_loader import window_generator
 from simba_ml.prediction.time_series.models import model
 from simba_ml.prediction import normalizer
+from simba_ml.prediction.time_series.models import check_params
 from simba_ml.prediction.time_series.config import (
     time_series_config,
 )
@@ -47,12 +49,15 @@ class ArchitectureParams:
 class TrainingParams:
     """Defines the parameters for the training."""
 
-    epochs: int = 10
     patience: int = 5
     batch_size: int = 32
     validation_split: float = 0.2
     verbose: int = 0
     accelerator: str = "auto"
+    learning_rate: float = 0.001
+    finetuning_learning_rate: typing.Optional[float] = None
+    epochs: int = 10
+    finetuning_epochs: typing.Optional[int] = None
 
 
 @dataclasses.dataclass
@@ -66,6 +71,7 @@ class PytorchLightningModelConfig(model.ModelConfig):
     training_params: TrainingParams = dataclasses.field(default_factory=TrainingParams)
     normalize: bool = True
     seed: int = 42
+    finetuning: bool = False
 
 
 class PytorchLightningModel(model.Model):
@@ -144,11 +150,19 @@ class PytorchLightningModel(model.Model):
             num_workers=0,
         )
 
-        trainer = pl.Trainer(
-            max_epochs=self.model_params.training_params.epochs,
-            log_every_n_steps=len(train_loader) // 2,
-            accelerator=self.model_params.training_params.accelerator,
-        )
+        if self.model_params.finetuning:
+            check_params.check_funetuning_params(self.model_params)
+            trainer = pl.Trainer(
+                max_epochs=self.model_params.training_params.finetuning_epochs,
+                log_every_n_steps=len(train_loader) // 2,
+                accelerator=self.model_params.training_params.accelerator,
+            )
+        else:
+            trainer = pl.Trainer(
+                max_epochs=self.model_params.training_params.epochs,
+                log_every_n_steps=len(train_loader) // 2,
+                accelerator=self.model_params.training_params.accelerator,
+            )
         trainer.fit(self.model, train_loader)
 
     def predict(self, data: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:

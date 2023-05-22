@@ -8,7 +8,6 @@ from simba_ml.prediction.time_series.config import (
     time_series_config,
 )
 
-
 def test_pytorch_lightning_dense_neural_network_predicts_correct_output_shape():
     config = dense_neural_network.DenseNeuralNetworkConfig()
     train = pd.DataFrame(np.random.default_rng().normal(0, 1, size=(500, 2)))
@@ -24,7 +23,6 @@ def test_pytorch_lightning_dense_neural_network_predicts_correct_output_shape():
 def test_pytorch_lightning_dense_neural_network_multivariate_prediction():
     config = dense_neural_network.DenseNeuralNetworkConfig()
     train = pd.DataFrame(np.random.default_rng().normal(0, 1, size=(500, 2)))
-
     time_series_params = time_series_config.TimeSeriesConfig(
         input_features=[0, 1], output_features=[0]
     )
