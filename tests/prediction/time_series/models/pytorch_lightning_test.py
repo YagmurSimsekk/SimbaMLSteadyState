@@ -70,3 +70,15 @@ def test_check_params_all_set_for_finetuning():
     cfg.training_params.finetuning_learning_rate = 0.0001
     cfg.training_params.finetuning_epochs = 1
     pytorch_lightning_model.check_finetuning_params(cfg)
+
+
+def test_pytorch_lightning_dense_neural_network_fails_with_wrong_config():
+    config = dense_neural_network.DenseNeuralNetworkConfig(finetuning=True)
+    train = pd.DataFrame(np.random.default_rng().normal(0, 1, size=(500, 2)))
+    time_series_params = time_series_config.TimeSeriesConfig(
+        input_features=[0, 1], output_features=[0, 1]
+    )
+    config.training_params.epochs = 1
+    with pytest.raises(ValueError):
+        model = dense_neural_network.DenseNeuralNetwork(time_series_params, config)
+        model.train(train=[train])
