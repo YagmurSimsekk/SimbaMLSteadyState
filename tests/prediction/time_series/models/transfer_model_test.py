@@ -11,7 +11,6 @@ from simba_ml.prediction.time_series.config import (
 from simba_ml.prediction.time_series.models.pytorch_lightning import (
     dense_neural_network,
 )
-from simba_ml.prediction.time_series.data_loader import window_generator
 
 
 def test_transfer_model():
