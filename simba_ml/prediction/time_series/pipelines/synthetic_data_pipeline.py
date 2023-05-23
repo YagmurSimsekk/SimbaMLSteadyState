@@ -51,13 +51,13 @@ def __evaluate_metrics(
             data=y_pred,
             features=config.data.time_series.output_features,
             export_path=config.data.export_path,
-            export_file_name=f"{model_name}-y_pred",
+            file_name=f"{model_name}-y_pred",
         )
         export.export_batches(
             data=y_test,
             features=config.data.time_series.output_features,
             export_path=config.data.export_path,
-            export_file_name="y_true",
+            file_name="y_true",
         )
     evaluation = {
         metric_id: metric_function(y_true=y_test, y_pred=y_pred)

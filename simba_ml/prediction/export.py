@@ -11,9 +11,9 @@ def export_batches(
     data: npt.NDArray[np.float64],
     features: list[str],
     export_path: str,
-    export_file_name: str,
+    file_name: str,
 ) -> None:
-    """Exports the batches (first dimension) to csv files for furthe exploration.
+    """Exports the batches to csv files for furthe exploration.
 
     Args:
         data: the data to export.
@@ -24,7 +24,7 @@ def export_batches(
     create_path_if_not_exist(os.path.join(os.getcwd(), export_path))
     for i in range(data.shape[0]):
         pd.DataFrame(data[i], columns=features).to_csv(
-            os.path.join(os.getcwd(), export_path, f"{export_file_name}-{i}.csv"),
+            os.path.join(os.getcwd(), export_path, f"{file_name}-{i}.csv"),
             index=False,
         )
 

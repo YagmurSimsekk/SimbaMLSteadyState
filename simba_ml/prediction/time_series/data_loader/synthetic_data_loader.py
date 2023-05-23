@@ -82,7 +82,7 @@ class SyntheticDataLoader:
                 data=self.__X_test,
                 export_path=self.config.export_path,
                 features=self.config.time_series.input_features,
-                export_file_name="X_test",
+                file_name="X_test",
             )
         return self.X_test if self.__X_test is None else self.__X_test
 
