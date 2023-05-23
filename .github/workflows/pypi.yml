@@ -22,6 +22,7 @@ jobs:
         pip install -r requirements.txt
         pip install -r dev_requirements.txt
         pip install -r docs_requirements.txt
+        pip install twine
     - name: Build
       run: |
         make build
