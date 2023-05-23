@@ -128,8 +128,6 @@ def test_synthetic_data_pipeline_export() -> None:
         )
     ).shape == (1, 2)
     assert pd.read_csv(
-        os.path.join(
-            os.getcwd(), export_path, "y_true-0.csv"
-        )
+        os.path.join(os.getcwd(), export_path, "y_true-0.csv")
     ).shape == (1, 2)
     shutil.rmtree(os.path.join(os.getcwd(), export_path))
