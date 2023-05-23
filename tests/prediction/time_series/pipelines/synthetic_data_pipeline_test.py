@@ -119,12 +119,15 @@ def test_synthetic_data_pipeline_export() -> None:
         "tests/prediction/time_series/conf/synthetic_data_pipeline_export.toml"
     )
     assert (
-        len(os.listdir(os.path.join(os.getcwd(), export_path))) == 150
-    )  # 50 for input, 50 for output of each model
+        len(os.listdir(os.path.join(os.getcwd(), export_path))) == 200
+    )  # 50 for X_test, 50 for y_true, 50 for y_pred of each model (here 2 models)
     assert os.listdir(os.path.join(os.getcwd(), export_path))[0].endswith(".csv")
     assert pd.read_csv(
         os.path.join(
-            os.getcwd(), export_path, "output-Keras Dense Neural Network-0.csv"
+            os.getcwd(), export_path, "Keras Dense Neural Network-y_pred-0.csv"
         )
+    ).shape == (1, 2)
+    assert pd.read_csv(
+        os.path.join(os.getcwd(), export_path, "y_true-0.csv")
     ).shape == (1, 2)
     shutil.rmtree(os.path.join(os.getcwd(), export_path))

@@ -64,7 +64,7 @@ def test_train_sets_do_not_change_when_called_multiple_times():
 
 
 def test_mixed_x_test_data_is_not_exported_when_no_export_path_is_provided():
-    with patch("simba_ml.prediction.export.export_input_batches") as mock_export:
+    with patch("simba_ml.prediction.export.export_batches") as mock_export:
         # pylint: disable=import-outside-toplevel
         cfg = data_config.DataConfig(
             synthetic="/tests/prediction/time_series/test_data/num_species_1/simulated/",  # pylint: disable=line-too-long
@@ -92,6 +92,6 @@ def test_mixed_x_test_data_is_exported_when_export_path_already_exists():
     loader = synthetic_data_loader.SyntheticDataLoader(cfg)
     loader.X_test  # pylint: disable=pointless-statement
     assert list(
-        pd.read_csv(os.path.join(os.getcwd(), export_path, "input_0.csv")).columns
+        pd.read_csv(os.path.join(os.getcwd(), export_path, "X_test-0.csv")).columns
     ) == ["Infected", "Recovered"]
     shutil.rmtree((os.path.join(os.getcwd(), export_path)))

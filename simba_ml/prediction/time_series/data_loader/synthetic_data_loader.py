@@ -78,10 +78,11 @@ class SyntheticDataLoader:
         if self.__X_test is None:
             self.prepare_data()
         if self.config.export_path is not None and self.__X_test is not None:
-            export.export_input_batches(
-                self.__X_test,
-                self.config.export_path,
-                self.config.time_series.input_features,
+            export.export_batches(
+                data=self.__X_test,
+                export_path=self.config.export_path,
+                features=self.config.time_series.input_features,
+                file_name="X_test",
             )
         return self.X_test if self.__X_test is None else self.__X_test
 

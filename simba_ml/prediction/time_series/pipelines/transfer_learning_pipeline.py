@@ -42,21 +42,27 @@ def _model_config_factory(
 
 def __evaluate_metrics(
     metrics: dict[str, metrics_module.Metric],
-    y_test: npt.NDArray[np.float64],
-    predictions: npt.NDArray[np.float64],
+    y_true: npt.NDArray[np.float64],
+    y_pred: npt.NDArray[np.float64],
     experiment_logger: wandb.WandbLogger,
     config: transfer_learning_pipeline.PipelineConfig,
     model_name: str,
 ) -> dict[str, np.float64]:
     if config.data.export_path is not None:
-        export.export_output_batches(
-            predictions,
-            config.data.export_path,
-            config.data.time_series.output_features,
-            model_name,
+        export.export_batches(
+            data=y_pred,
+            features=config.data.time_series.output_features,
+            export_path=config.data.export_path,
+            file_name=f"{model_name}-y_pred",
+        )
+        export.export_batches(
+            data=y_true,
+            features=config.data.time_series.output_features,
+            export_path=config.data.export_path,
+            file_name="y_true",
         )
     evaluation = {
-        metric_id: metric_function(y_true=y_test, y_pred=predictions)
+        metric_id: metric_function(y_true=y_true, y_pred=y_pred)
         for metric_id, metric_function in metrics.items()
     }
     experiment_logger.log(data=evaluation)
