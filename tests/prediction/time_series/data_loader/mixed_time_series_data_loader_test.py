@@ -104,6 +104,6 @@ def test_mixed_x_test_data_is_exported_when_export_path_already_exists():
     loader = mixed_data_loader.MixedDataLoader(cfg)
     loader.X_test  # pylint: disable=pointless-statement
     assert list(
-        pd.read_csv(os.path.join(os.getcwd(), export_path, "input_0.csv")).columns
+        pd.read_csv(os.path.join(os.getcwd(), export_path, "X_test_0.csv")).columns
     ) == ["Infected", "Recovered"]
     shutil.rmtree((os.path.join(os.getcwd(), export_path)))

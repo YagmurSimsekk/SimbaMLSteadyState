@@ -23,13 +23,14 @@ def export_input_batches(
             data[i],
             columns=input_features,
         ).to_csv(
-            os.path.join(os.getcwd(), export_path, f"input_{i}.csv"),
+            os.path.join(os.getcwd(), export_path, f"X_test_{i}.csv"),
             index=False,
         )
 
 
 def export_output_batches(
-    data: npt.NDArray[np.float64],
+    y_pred: npt.NDArray[np.float64],
+    y_true: npt.NDArray[np.float64],
     export_path: str,
     output_features: list[str],
     model_name: str,
@@ -37,19 +38,28 @@ def export_output_batches(
     """Exports the output batches to csv files.
 
     Args:
-        data: prediction and y_true batches.
+        y_pred: prediction batches.
+        y_true: true batches.
         export_path: the path to export the output batches to.
         output_features: the output features.
         model_name: the name of the model for export purposes.
 
     """
     create_path_if_not_exist(os.path.join(os.getcwd(), export_path))
-    for i in range(data.shape[0]):
+    for i in range(y_pred.shape[0]):
         pd.DataFrame(
-            data[i],
+            y_pred[i],
             columns=output_features,
         ).to_csv(
-            os.path.join(os.getcwd(), export_path, f"output-{model_name}-{i}.csv"),
+            os.path.join(os.getcwd(), export_path, f"{model_name}-y_pred-{i}.csv"),
+            index=False,
+        )
+    for i in range(y_true.shape[0]):
+        pd.DataFrame(
+            y_true[i],
+            columns=output_features,
+        ).to_csv(
+            os.path.join(os.getcwd(), export_path, f"y_true-{i}.csv"),
             index=False,
         )
 

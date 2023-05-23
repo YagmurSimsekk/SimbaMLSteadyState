@@ -49,6 +49,7 @@ def __evaluate_metrics(
     if config.data.export_path is not None:
         export.export_output_batches(
             predictions,
+            y_test,
             config.data.export_path,
             config.data.time_series.output_features,
             model_name,
