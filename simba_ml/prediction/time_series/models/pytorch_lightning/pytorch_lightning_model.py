@@ -48,13 +48,15 @@ class ArchitectureParams:
 class TrainingParams:
     """Defines the parameters for the training."""
 
-    epochs: int = 10
     patience: int = 5
     batch_size: int = 32
     validation_split: float = 0.2
     verbose: int = 0
     accelerator: str = "auto"
-    checkpoint_path: typing.Optional[str] = None
+    learning_rate: float = 0.001
+    finetuning_learning_rate: typing.Optional[float] = None
+    epochs: int = 10
+    finetuning_epochs: typing.Optional[int] = None
 
 
 @dataclasses.dataclass
@@ -68,6 +70,7 @@ class PytorchLightningModelConfig(model.ModelConfig):
     training_params: TrainingParams = dataclasses.field(default_factory=TrainingParams)
     normalize: bool = True
     seed: int = 42
+    finetuning: bool = False
 
 
 class PytorchLightningModel(model.Model):
@@ -145,12 +148,32 @@ class PytorchLightningModel(model.Model):
             shuffle=True,
             num_workers=0,
         )
+        self.start_trainer(train_loader)
 
-        trainer = pl.Trainer(
-            max_epochs=self.model_params.training_params.epochs,
-            log_every_n_steps=len(train_loader) // 2,
-            accelerator=self.model_params.training_params.accelerator,
-        )
+    def start_trainer(
+        self,
+        train_loader: utils.data.dataloader.DataLoader[
+            torch.FloatTensor  # pylint: disable=no-member
+        ],
+    ) -> None:
+        """Starts the trainer for the model.
+
+        Args:
+            train_loader: the data loader for the training data.
+        """
+        if self.model_params.finetuning:
+            check_finetuning_params(self.model_params)
+            trainer = pl.Trainer(
+                max_epochs=self.model_params.training_params.finetuning_epochs,
+                log_every_n_steps=len(train_loader) // 2,
+                accelerator=self.model_params.training_params.accelerator,
+            )
+        else:
+            trainer = pl.Trainer(
+                max_epochs=self.model_params.training_params.epochs,
+                log_every_n_steps=len(train_loader) // 2,
+                accelerator=self.model_params.training_params.accelerator,
+            )
         trainer.fit(self.model, train_loader)
 
     def predict(self, data: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
@@ -172,3 +195,23 @@ class PytorchLightningModel(model.Model):
         if self.model_params.normalize:
             prediction = self.normalizer.denormalize_prediction_data(prediction)
         return prediction
+
+
+def check_finetuning_params(
+    model_params: PytorchLightningModelConfig,
+) -> None:
+    """Checks whether all the required arguments for finetuning the model are set.
+
+    Args:
+        model_params: the model parameters to check.
+
+    Raises:
+        ValueError: if the model is not set to finetuning.
+    """
+    if model_params.finetuning and not (
+        model_params.training_params.finetuning_learning_rate
+        and model_params.training_params.finetuning_epochs
+    ):
+        raise ValueError(
+            "The model is set to finetuning but the finetuning learning rate or the finetuning epochs are not set."  # pylint: disable=line-too-long
+        )

@@ -18,6 +18,8 @@ id = "PytorchLightningDenseNeuralNetworkTransferLearning"
 
 [models.training_params]
 epochs = 1
+finetuning_epochs = 1
+finetuning_learning_rate = 0.0001
 
 [data]
 observed = "/tests/prediction/time_series/test_data/num_species_3/simulated/"

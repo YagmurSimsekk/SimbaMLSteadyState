@@ -49,6 +49,7 @@ def model_to_transfer_learning_model_with_pretraining(
                 observed: observed data.
             """
             self.model.train(synthetic)
+            self.model.model_params.finetuning = True
             self.model.train(observed)
 
         def predict(self, data: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:

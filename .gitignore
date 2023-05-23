@@ -18,6 +18,7 @@ build
 coverage.xml
 **/_autosummary
 **/data/*.csv
+**/export/*.csv
 **/outputs
 dev.py
 wandb/

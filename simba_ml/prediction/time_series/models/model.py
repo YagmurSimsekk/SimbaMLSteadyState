@@ -17,6 +17,7 @@ class ModelConfig:
     """Defines the configuration for the Model."""
 
     name: str = "Model"
+    finetuning: bool = False
 
 
 class Model(abc.ABC):
