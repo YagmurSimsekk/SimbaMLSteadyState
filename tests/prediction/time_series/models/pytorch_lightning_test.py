@@ -82,3 +82,14 @@ def test_pytorch_lightning_dense_neural_network_fails_with_wrong_config():
     with pytest.raises(ValueError):
         model = dense_neural_network.DenseNeuralNetwork(time_series_params, config)
         model.train(train=[train])
+
+
+def test_configure_optimizers_raises_error_if_finetuning_rate_not_set():
+    config = dense_neural_network.DenseNeuralNetworkConfig(finetuning=True)
+    time_series_params = time_series_config.TimeSeriesConfig(
+        input_features=[0, 1], output_features=[0, 1]
+    )
+    model = dense_neural_network.DenseNeuralNetwork(time_series_params, config)
+    print(model.model)
+    with pytest.raises(ValueError, match="finetuning_learning_rate must be set."):
+        model.model.configure_optimizers()

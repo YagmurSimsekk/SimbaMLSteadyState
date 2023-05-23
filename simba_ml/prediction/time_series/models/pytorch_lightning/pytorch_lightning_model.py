@@ -148,7 +148,19 @@ class PytorchLightningModel(model.Model):
             shuffle=True,
             num_workers=0,
         )
+        self.start_trainer(train_loader)
 
+    def start_trainer(
+        self,
+        train_loader: utils.data.dataloader.DataLoader[
+            torch.FloatTensor  # pylint: disable=no-member
+        ],
+    ) -> None:
+        """Starts the trainer for the model.
+
+        Args:
+            train_loader: the data loader for the training data.
+        """
         if self.model_params.finetuning:
             check_finetuning_params(self.model_params)
             trainer = pl.Trainer(

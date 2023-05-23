@@ -86,9 +86,7 @@ class _DenseNeuralNetwork(pl.LightningModule):  # pylint: disable=too-many-ances
     def configure_optimizers(self) -> torch.optim.Adam:
         if self.model_params.finetuning:
             if self.model_params.training_params.finetuning_learning_rate is None:
-                raise ValueError(  # pragma: no cover
-                    "finetuning_learning_rate must be set."
-                )
+                raise ValueError("finetuning_learning_rate must be set.")
             return torch.optim.Adam(
                 self.parameters(),
                 lr=self.model_params.training_params.finetuning_learning_rate,
