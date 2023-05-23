@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 import numpy as np
 import pytest
@@ -90,6 +92,6 @@ def test_configure_optimizers_raises_error_if_finetuning_rate_not_set():
         input_features=[0, 1], output_features=[0, 1]
     )
     model = dense_neural_network.DenseNeuralNetwork(time_series_params, config)
-    print(model.model)
+    logging.log(model.model)
     with pytest.raises(ValueError, match="finetuning_learning_rate must be set."):
         model.model.configure_optimizers()
