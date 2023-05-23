@@ -19,7 +19,7 @@ def export_batches(
         data: the data to export.
         features: the features of the data.
         export_path: the path to export the data to.
-        export_file_name: the name of the file to export the data to.
+        file_name: the name of the file to export the data to.
     """
     create_path_if_not_exist(os.path.join(os.getcwd(), export_path))
     for i in range(data.shape[0]):
