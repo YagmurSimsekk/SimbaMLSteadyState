@@ -2,6 +2,7 @@
      pytorch lightning architecture."""
 import abc
 import dataclasses
+import typing
 
 import torch
 from torch import utils
@@ -53,6 +54,7 @@ class TrainingParams:
     validation_split: float = 0.2
     verbose: int = 0
     accelerator: str = "auto"
+    checkpoint_path: typing.Optional[str] = None
 
 
 @dataclasses.dataclass
