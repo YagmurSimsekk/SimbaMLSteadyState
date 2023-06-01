@@ -59,6 +59,16 @@ def start_prediction(pipeline: str, output_path: str, config_path: str) -> None:
     """
     sys.path.append(os.getcwd())
     results = PIPELINES[pipeline](config_path)
-    if not os.path.exists(output_path):
-        os.mkdir(output_path)
+    create_dir_if_not_exists(output_path)
     results.to_csv(output_path)
+
+
+def create_dir_if_not_exists(path: str) -> None:
+    """Creates a directory if not exists.
+
+    Args:
+        path: A filepath
+    """
+    output_dir = os.path.dirname(path)
+    if output_dir != "" and not os.path.exists(output_dir):
+        os.mkdir(output_dir)
