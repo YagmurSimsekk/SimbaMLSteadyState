@@ -59,4 +59,6 @@ def start_prediction(pipeline: str, output_path: str, config_path: str) -> None:
     """
     sys.path.append(os.getcwd())
     results = PIPELINES[pipeline](config_path)
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
     results.to_csv(output_path)
