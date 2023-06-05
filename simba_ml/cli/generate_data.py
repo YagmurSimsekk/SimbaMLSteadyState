@@ -1,5 +1,7 @@
 """Defines CLI command for generating data."""
 import importlib
+import os
+import sys
 
 import click
 
@@ -53,5 +55,6 @@ def generate_data(generator: str, config_module: str, n: int, output_dir: str) -
         n: Number of samples to generate.
         output_dir: Path to the output directory.
     """
+    sys.path.append(os.getcwd())
     sm = importlib.import_module(__normalize_module_name(config_module)).sm
     GENERATORS[generator](sm).generate_csvs(n, output_dir)

@@ -80,12 +80,12 @@ def main(config_path: str) -> pd.DataFrame:
     # read in config and load defined plugins
     with open(config_path, mode="rb") as fp:
         config_json = tomli.load(fp)
+    plugin_loader.load_plugins(config_json["plugins"])
     config = dacite.from_dict(
         data_class=pipeline_config.PipelineConfig,
         data=config_json,
         config=dacite.Config(strict=True),
     )
-    plugin_loader.load_plugins(config.plugins)
 
     # set seed
     np.random.seed(config.seed)
