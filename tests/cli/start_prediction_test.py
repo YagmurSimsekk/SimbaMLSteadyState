@@ -6,6 +6,7 @@ import pandas as pd
 from simba_ml.cli.__main__ import main
 from simba_ml.cli import start_prediction
 
+
 def test_start_prediction() -> None:
     """Tests start_prediction."""
     output_path = "tmp.csv"

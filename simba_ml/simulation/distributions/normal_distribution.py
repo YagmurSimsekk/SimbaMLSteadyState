@@ -6,6 +6,7 @@ import numpy as np
 from scipy import stats
 
 from simba_ml import error_handler
+from simba_ml.simulation import random_generator
 
 
 class NormalDistribution:

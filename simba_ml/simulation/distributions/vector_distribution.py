@@ -5,6 +5,7 @@ import typing
 import numpy as np
 
 from simba_ml import error_handler
+from simba_ml.simulation import random_generator
 
 
 class VectorDistribution:
@@ -39,7 +40,7 @@ class VectorDistribution:
         Returns:
             np.ndarray[float]
         """
-        return np.random.default_rng().choice(self.values, size=n).tolist()
+        return random_generator.get_rng().choice(self.values, size=n).tolist()
 
     def get_samples_from_hypercube(self, n: int) -> list[float]:
         """Samples n values from a hypercube.
@@ -50,7 +51,7 @@ class VectorDistribution:
         Returns:
             Samples of the distributions, sampled from a hypercube.
         """
-        rng = np.random.default_rng()
+        rng = random_generator.get_rng()
         res = (
             self.values * (n // len(self.values)) + self.values[: n % len(self.values)]
         )

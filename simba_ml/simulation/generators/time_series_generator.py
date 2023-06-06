@@ -75,7 +75,6 @@ class TimeSeriesGenerator:
             ValueError: If the method is not 'hypercube' or 'random'.
         """
         start_values = self.sm.sample_start_values_from_hypercube(n)
-        print(start_values)
         signals = []
         for i in range(n):
             clean_signal = self.sm.get_clean_signal(

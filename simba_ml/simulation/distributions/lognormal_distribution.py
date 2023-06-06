@@ -6,6 +6,7 @@ import numpy as np
 from scipy import stats
 
 from simba_ml import error_handler
+from simba_ml.simulation import random_generator
 
 
 class LogNormalDistribution:
@@ -48,7 +49,9 @@ class LogNormalDistribution:
         Returns:
             np.ndarray[float]
         """
-        return np.random.default_rng().lognormal(self.mu, self.sigma, size=n).tolist()
+        return (
+            random_generator.get_rng().lognormal(self.mu, self.sigma, size=n).tolist()
+        )
 
     def get_samples_from_hypercube(self, n: int) -> list[float]:
         """Samples n values from a hypercube.
