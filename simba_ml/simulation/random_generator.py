@@ -8,14 +8,14 @@ def get_rng() -> np.random.Generator:
     """Returns the random generator.
 
     Returns:
-      The random generator
+        The random generator
     """
     return rng[0]
 
 
 def set_seed(seed: int) -> None:
     """Sets the seed.
-    
+
     Args:
         seed: the random seed
     """
