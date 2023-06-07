@@ -8,6 +8,7 @@ pydocstyle>=6.1.1
 pylint-google-style-guide-imports-enforcing>=1.3.0
 mypy>=1.0.0
 darglint>=1.8.1
+tensorflow>=2.10.0; platform_machine != 'arm64'
 black>=23.1.0
 pytorch-lightning>=1.9.0
 setuptools==59.8.0
