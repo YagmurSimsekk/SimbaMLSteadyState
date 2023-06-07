@@ -6,6 +6,7 @@ import sys
 import click
 
 from simba_ml.simulation import generators
+from simba_ml.simulation import random_generator
 
 
 GENERATORS: dict[str, type[generators.GeneratorInterface]] = {
@@ -46,7 +47,16 @@ def __normalize_module_name(name: str) -> str:
     required=True,
     help="Path to the output directory.",
 )
-def generate_data(generator: str, config_module: str, n: int, output_dir: str) -> None:
+@click.option(
+    "--seed",
+    required=False,
+    default=0,
+    type=int,
+    help="The random seed for the simulation part.",
+)
+def generate_data(
+    generator: str, config_module: str, n: int, output_dir: str, seed: int
+) -> None:
     """Command for generating data.
 
     Args:
@@ -56,5 +66,6 @@ def generate_data(generator: str, config_module: str, n: int, output_dir: str) -
         output_dir: Path to the output directory.
     """
     sys.path.append(os.getcwd())
+    random_generator.set_seed(seed)
     sm = importlib.import_module(__normalize_module_name(config_module)).sm
     GENERATORS[generator](sm).generate_csvs(n, output_dir)
