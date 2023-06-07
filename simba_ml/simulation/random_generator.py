@@ -17,6 +17,6 @@ def set_seed(seed: int) -> None:
     """Sets the seed.
 
     Args:
-      seed: the randoms seed
+        seed: the random seed
     """
     rng[0] = np.random.default_rng(seed)
