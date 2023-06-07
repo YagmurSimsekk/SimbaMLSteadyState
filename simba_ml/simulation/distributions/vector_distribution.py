@@ -2,8 +2,6 @@
 
 import typing
 
-import numpy as np
-
 from simba_ml import error_handler
 from simba_ml.simulation import random_generator
 

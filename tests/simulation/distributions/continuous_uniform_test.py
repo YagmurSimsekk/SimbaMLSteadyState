@@ -25,13 +25,32 @@ def test_continuous_uniform_distribution_multiple_values():
 
     n = 5
     initial_condition = distributions.ContinuousUniformDistribution(my_min, my_max)
+    random_generator.set_seed(42)
     result = initial_condition.get_random_values(n)
     assert result == [
-        3.5395734275277406,
-        3.081947047872389,
-        3.033055271057058,
-        4.626540478400544,
-        4.825511154555444,
+        4.547912097111927,
+        3.877756879504105,
+        4.7171958398227645,
+        4.394736058118728,
+        3.188354695775299,
+    ]
+    random_generator.set_seed(42)
+    result = initial_condition.get_random_values(n)
+    assert result == [
+        4.547912097111927,
+        3.877756879504105,
+        4.7171958398227645,
+        4.394736058118728,
+        3.188354695775299,
+    ]
+    random_generator.set_seed(43)
+    result = initial_condition.get_random_values(n)
+    assert result == [
+        4.304598525401821,
+        3.087550647277993,
+        3.0400591737484337,
+        4.67842516502206,
+        4.174286095176117,
     ]
 
 
