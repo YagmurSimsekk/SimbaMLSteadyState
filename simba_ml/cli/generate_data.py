@@ -64,6 +64,7 @@ def generate_data(
         config_module: Path to the config file, that contains a System Model called sm.
         n: Number of samples to generate.
         output_dir: Path to the output directory.
+        seed: The random seed
     """
     sys.path.append(os.getcwd())
     random_generator.set_seed(seed)

@@ -15,7 +15,7 @@ def get_rng() -> np.random.Generator:
 
 def set_seed(seed: int) -> None:
     """Sets the seed.
-
+    
     Args:
         seed: the random seed
     """
