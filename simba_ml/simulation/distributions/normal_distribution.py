@@ -60,6 +60,6 @@ class NormalDistribution:
             Samples of the distribution, sampled from a hypercube.
         """
         rv = stats.norm(self.mu, self.sigma)
-        p = [np.random.uniform(low=i / n, high=(i + 1) / n) for i in range(n)]
+        p = [random_generator.get_rng()(low=i / n, high=(i + 1) / n) for i in range(n)]
         rv.random_state = random_generator.get_rng()
         return rv.ppf(p)
