@@ -5,6 +5,7 @@ import typing
 import numpy as np
 
 from simba_ml import error_handler
+from simba_ml.simulation import random_generator
 
 
 class ContinuousUniformDistribution:
@@ -43,7 +44,7 @@ class ContinuousUniformDistribution:
             np.ndarray[float]
         """
         return (
-            np.random.default_rng()
+            random_generator.get_rng()
             .uniform(self.min_value, self.max_value, size=n)
             .tolist()
         )
@@ -57,7 +58,7 @@ class ContinuousUniformDistribution:
         Returns:
             Samples of the distributions, sampled from a hypercube.
         """
-        rng = np.random.default_rng()
+        rng = random_generator.get_rng()
         res = [
             rng.uniform(min_value, min_value + (self.max_value - self.min_value) / n)
             for min_value in np.arange(

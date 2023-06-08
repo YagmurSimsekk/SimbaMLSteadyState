@@ -19,7 +19,7 @@ setup(
     project_urls={
         "Bug Tracker": "https://github.com/DILiS-lab/SimbaML/issues",
         "Source Code": "https://github.com/DILiS-lab/SimbaML",
-        "Documentation": "https://simbaml.readthedocs.io"
+        "Documentation": "https://simbaml.readthedocs.io",
     },
     description=DESCRIPTION,
     long_description=README,
@@ -51,5 +51,5 @@ setup(
             "simba_ml = simba_ml.cli.__main__:main",
         ],
     },
-    license_files=("LICENSE.txt",)
+    license_files=("LICENSE.txt",),
 )

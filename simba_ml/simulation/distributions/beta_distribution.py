@@ -2,10 +2,11 @@
 
 import typing
 
-import numpy as np
 from scipy import stats
 
 from simba_ml import error_handler
+
+from simba_ml.simulation import random_generator
 
 
 class BetaDistribution:
@@ -42,13 +43,13 @@ class BetaDistribution:
         """Samples an array of values with the given shape from the distributions.
 
         Args:
-            n: The number of values.
+            n: The number ofnp.random values.
 
         Returns:
             an array of randomly sampled values.
 
         """
-        return np.random.default_rng().beta(self.alpha, self.beta, n).tolist()
+        return random_generator.get_rng().beta(self.alpha, self.beta, n).tolist()
 
     def get_samples_from_hypercube(self, n: int) -> list[float]:
         """Samples n values from a hypercube.
@@ -60,5 +61,9 @@ class BetaDistribution:
             Samples of the distribution, sampled from a hypercube.
         """
         rv = stats.beta(self.alpha, self.beta)
-        p = [np.random.uniform(low=i / n, high=(i + 1) / n) for i in range(n)]
+        p = [
+            random_generator.get_rng().uniform(low=i / n, high=(i + 1) / n)
+            for i in range(n)
+        ]
+        rv.random_state = random_generator.get_rng()
         return rv.ppf(p)

@@ -121,7 +121,6 @@ class PytorchLightningModel(model.Model):
             seed: seed to set.
         """
         torch.manual_seed(seed)
-        np.random.seed(seed)
 
     def train(self, train: list[pd.DataFrame]) -> None:
         """Trains the model with the given data.

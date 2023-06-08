@@ -116,7 +116,6 @@ class KerasModel(model.Model):
             seed: seed to set.
         """
         tf.random.set_seed(seed)
-        np.random.seed(seed)
 
     def train(self, train: list[pd.DataFrame]) -> None:
         """Trains the model with the given data.
