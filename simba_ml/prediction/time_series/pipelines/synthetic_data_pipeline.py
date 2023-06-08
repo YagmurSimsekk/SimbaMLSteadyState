@@ -88,7 +88,6 @@ def main(config_path: str) -> pd.DataFrame:
     )
 
     # set seed
-    np.random.seed(config.seed)
     random.seed(config.seed)
 
     # set up wandb

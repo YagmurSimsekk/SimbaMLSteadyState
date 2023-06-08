@@ -1,13 +1,12 @@
 """Provides the generator for `PredictionTask` signals."""
 import os
 import typing
-
 import math
-import numpy as np
 
 import pandas as pd
 
 from simba_ml.simulation.system_model import system_model_interface
+from simba_ml.simulation import random_generator
 
 
 class SteadyStateGenerator:
@@ -104,7 +103,7 @@ class SteadyStateGenerator:
         for key in start_values["specieses"]:
             start_values["specieses"][key][sample_id] = clean_signal[key].iloc[
                 -1
-            ] * np.random.normal(1, pertubation_std)
+            ] * random_generator.get_rng().normal(1, pertubation_std)
 
         pertubated_signal = self.sm.get_clean_signal(
             start_values=start_values, sample_id=sample_id

@@ -1,9 +1,9 @@
 """Defines the Normal Distribution."""
 
-import numpy as np
 from scipy import stats
 
 from simba_ml import error_handler
+from simba_ml.simulation import random_generator
 
 
 class NormalDistribution:
@@ -43,7 +43,7 @@ class NormalDistribution:
         Returns:
             np.ndarray[float]
         """
-        return np.random.default_rng().normal(self.mu, self.sigma, size=n).tolist()
+        return random_generator.get_rng().normal(self.mu, self.sigma, size=n).tolist()
 
     def get_samples_from_hypercube(self, n: int) -> list[float]:
         """Samples n values from a hypercube.
@@ -55,5 +55,9 @@ class NormalDistribution:
             Samples of the distribution, sampled from a hypercube.
         """
         rv = stats.norm(self.mu, self.sigma)
-        p = [np.random.uniform(low=i / n, high=(i + 1) / n) for i in range(n)]
+        p = [
+            random_generator.get_rng().uniform(low=i / n, high=(i + 1) / n)
+            for i in range(n)
+        ]
+        rv.random_state = random_generator.get_rng()
         return rv.ppf(p)

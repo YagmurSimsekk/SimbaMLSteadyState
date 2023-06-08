@@ -85,7 +85,6 @@ def main(config_path: str) -> dict[str, dict[str, dict[str, np.float64]]]:
     )
 
     # set seed
-    np.random.seed(config.seed)
     random.seed(config.seed)
 
     # set up wandb
