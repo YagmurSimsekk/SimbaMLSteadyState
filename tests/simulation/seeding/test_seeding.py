@@ -10,15 +10,15 @@ from simba_ml.simulation import generators
 
 
 def list_of_dataframes_similar(list1, list2, max_difference=0.00001):
-    if not len(list1) == len(list2):
+    if len(list1) != len(list2):
         return False
-    for i in range(len(list1)):
-        if not (
+    return all(
+        (
             list1[i].to_numpy().reshape(-1) - list2[i].to_numpy().reshape(-1)
             <= max_difference
-        ).all():
-            return False
-    return True
+        ).all()
+        for i in range(len(list1))
+    )
 
 
 def test_seeding():
