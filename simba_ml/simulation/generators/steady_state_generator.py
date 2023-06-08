@@ -1,13 +1,12 @@
 """Provides the generator for `PredictionTask` signals."""
 import os
 import typing
-
 import math
-import numpy as np
 
 import pandas as pd
 
 from simba_ml.simulation.system_model import system_model_interface
+from simba_ml.simulation import random_generator
 
 
 class SteadyStateGenerator:

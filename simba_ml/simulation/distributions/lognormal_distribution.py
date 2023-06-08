@@ -2,7 +2,6 @@
 
 import typing
 
-import numpy as np
 from scipy import stats
 
 from simba_ml import error_handler
@@ -62,5 +61,8 @@ class LogNormalDistribution:
         Returns:
             Samples of the distribution, sampled from a hypercube.
         """
-        p = [random_generator.get_rng().uniform(low=i / n, high=(i + 1) / n) for i in range(n)]
+        p = [
+            random_generator.get_rng().uniform(low=i / n, high=(i + 1) / n)
+            for i in range(n)
+        ]
         return stats.lognorm.ppf(p, 1, self.mu, self.sigma)

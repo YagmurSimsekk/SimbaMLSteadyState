@@ -2,7 +2,6 @@
 
 import typing
 
-import numpy as np
 from scipy import stats
 
 from simba_ml import error_handler
@@ -60,6 +59,9 @@ class NormalDistribution:
             Samples of the distribution, sampled from a hypercube.
         """
         rv = stats.norm(self.mu, self.sigma)
-        p = [random_generator.get_rng()(low=i / n, high=(i + 1) / n) for i in range(n)]
+        p = [
+            random_generator.get_rng().uniform(low=i / n, high=(i + 1) / n)
+            for i in range(n)
+        ]
         rv.random_state = random_generator.get_rng()
         return rv.ppf(p)
