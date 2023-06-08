@@ -1,6 +1,4 @@
 """Removes a given relative amount of samples from a signal."""
-import typing
-
 import pandas as pd
 
 from simba_ml import error_handler
@@ -19,7 +17,7 @@ class RandomSampleSparsifier(sparsifier.Sparsifier):
         ValueError: If frac not in the interval [0, 1].
     """
 
-    def __init__(self, frac: typing.Union[float, int] = 0.5) -> None:
+    def __init__(self, frac: float = 0.5) -> None:
         """Inits the `RandomSampleSparsiier`.
 
         Args:
@@ -27,7 +25,7 @@ class RandomSampleSparsifier(sparsifier.Sparsifier):
         """
         error_handler.confirm_param_is_float_or_int(frac, "frac")
         error_handler.confirm_number_is_in_interval(frac, 0, 1, param_name="frac")
-        self.frac = float(frac)
+        self.frac = frac
 
     def sparsify(self, signal: pd.DataFrame) -> pd.DataFrame:
         """Removes some (`1-frac`) samples chosen with a uniform random distributions.

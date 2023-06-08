@@ -16,7 +16,7 @@ class ConstantKineticParameter(typing.Generic[T]):
         distribution: The distribution for possible values of the kinetic parameter.
     """
 
-    samples: typing.Optional[list[T]] = None
+    samples: list[T] | None = None
 
     def __init__(self, distribution: distribution_module.Distribution[T]):
         """Initializes a constant kinetic parameter.

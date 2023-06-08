@@ -12,7 +12,7 @@ T = typing.TypeVar("T")
 class WandbLogger:
     """Wrapper for wandb logging."""
 
-    def __init__(self, config: typing.Optional[logging_config.LoggingConfig]) -> None:
+    def __init__(self, config: logging_config.LoggingConfig | None) -> None:
         """Initializes the wandb logger.
 
         Args:
@@ -33,7 +33,7 @@ class WandbLogger:
             *args, **kwargs, project=self.config.project, entity=self.config.entity
         )
 
-    def __getattr__(self, name: str) -> typing.Callable[..., typing.Optional[T]]:
+    def __getattr__(self, name: str) -> typing.Callable[..., T | None]:
         """Passes the message to wandb if wandb logging is enabled.
 
         Args:
@@ -45,12 +45,8 @@ class WandbLogger:
         """
         func = getattr(wandb, name)
 
-        def outer(
-            func: typing.Callable[..., T]
-        ) -> typing.Callable[..., typing.Optional[T]]:
-            def pass_message(
-                *args: typing.Any, **kwargs: typing.Any
-            ) -> typing.Optional[T]:
+        def outer(func: typing.Callable[..., T]) -> typing.Callable[..., T | None]:
+            def pass_message(*args: typing.Any, **kwargs: typing.Any) -> T | None:
                 return func(*args, **kwargs) if self.config is not None else None
 
             return pass_message

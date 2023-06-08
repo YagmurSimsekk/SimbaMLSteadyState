@@ -23,8 +23,8 @@ class Species:
         name: str,
         distribution: distributions.Distribution[float],
         contained_in_output: bool = True,
-        min_value: typing.Optional[float] = None,
-        max_value: typing.Optional[float] = None,
+        min_value: float | None = None,
+        max_value: float | None = None,
     ) -> None:
         """Inits Species with the provided params.
 

@@ -1,5 +1,4 @@
 """Provides a constranit, which does nothing."""
-from typing import Optional
 import math
 import pandas as pd
 from simba_ml.simulation.constraints import constraint
@@ -12,8 +11,8 @@ class KeepSpeciesSum(constraint.Constraint):
     def __init__(
         self,
         sm: system_model_interface.SystemModelInterface,
-        specieses_to_hold_sum: Optional[list[str]] = None,
-        species_sum: Optional[int] = None,
+        specieses_to_hold_sum: list[str] | None = None,
+        species_sum: int | None = None,
     ):
         """Inits `KeepSpeciesSum`.
 

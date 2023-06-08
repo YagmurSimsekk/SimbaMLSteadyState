@@ -1,6 +1,5 @@
 """Provides the configuration for the pipeline."""
 import dataclasses
-import typing
 
 from simba_ml.prediction.time_series.config.transfer_learning_pipeline import (
     data_config,
@@ -19,7 +18,7 @@ class PipelineConfig:
     models: list[dict[str, object]]
     metrics: list[str]
     data: data_config.DataConfig
-    logging: typing.Optional[logging_config.LoggingConfig] = None
+    logging: logging_config.LoggingConfig | None = None
     plugins: list[str] = dataclasses.field(default_factory=list)
     metric_functions: dict[str, metrics_module.Metric] = dataclasses.field(init=False)
     seed: int = 42

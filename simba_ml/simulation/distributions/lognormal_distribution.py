@@ -1,7 +1,5 @@
 """Defines Lognormal Distribution."""
 
-import typing
-
 import numpy as np
 from scipy import stats
 
@@ -22,9 +20,7 @@ class LogNormalDistribution:
         TypeError: If sigma is not float or int.
     """
 
-    def __init__(
-        self, mu: typing.Union[float, int], sigma: typing.Union[float, int]
-    ) -> None:
+    def __init__(self, mu: float, sigma: float) -> None:
         """Inits LogNormalDistribution with the provided arguments.
 
         Args:

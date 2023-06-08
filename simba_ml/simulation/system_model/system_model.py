@@ -92,12 +92,10 @@ class SystemModel:
         deriv: typing.Callable[
             [float, list[float], dict[str, KineticParameterType]], tuple[float, ...]
         ],
-        sparsifier: typing.Optional[abstract_sparsifier.Sparsifier] = None,
-        noiser: typing.Optional[noisers.Noiser] = None,
-        deriv_noiser: typing.Optional[
-            derivative_noiser.DerivNoiser[KineticParameterType]
-        ] = None,
-        timestamps: typing.Optional[distributions.Distribution[float]] = None,
+        sparsifier: abstract_sparsifier.Sparsifier | None = None,
+        noiser: noisers.Noiser | None = None,
+        deriv_noiser: derivative_noiser.DerivNoiser[KineticParameterType] | None = None,
+        timestamps: distributions.Distribution[float] | None = None,
         solver_method: str = "LSODA",
     ):
         """Inits PredictionTask with the provided params.
@@ -131,9 +129,7 @@ class SystemModel:
         self.__deriv = deriv
         self.solver_method = solver_method
 
-    def __get_t(
-        self, timestamps: typing.Optional[int] = None
-    ) -> np.typing.NDArray[np.float64]:
+    def __get_t(self, timestamps: int | None = None) -> np.typing.NDArray[np.float64]:
         """Returns an array of timestamps in range `[0, timestamps)`.
 
         Args:

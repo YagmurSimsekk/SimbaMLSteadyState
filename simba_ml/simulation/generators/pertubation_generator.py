@@ -27,8 +27,8 @@ class PertubationGenerator:
     def __init__(
         self,
         sm: system_model_interface.SystemModelInterface,
-        species_start_values_noiser: typing.Optional[noisers.Noiser] = None,
-        kinetic_parameters_noiser: typing.Optional[noisers.Noiser] = None,
+        species_start_values_noiser: noisers.Noiser | None = None,
+        kinetic_parameters_noiser: noisers.Noiser | None = None,
     ):
         """Initializes the `PertubationGenerator`.
 

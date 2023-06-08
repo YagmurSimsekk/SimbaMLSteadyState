@@ -1,7 +1,5 @@
 """Defines Continuous Uniform Distribution."""
 
-import typing
-
 import numpy as np
 
 from simba_ml import error_handler
@@ -19,9 +17,7 @@ class ContinuousUniformDistribution:
         TypeError: If max_value is not float or int.
     """
 
-    def __init__(
-        self, min_value: typing.Union[float, int], max_value: typing.Union[float, int]
-    ) -> None:
+    def __init__(self, min_value: float, max_value: float) -> None:
         """Inits ContinuousUniformDistribution with the provided arguments.
 
         Args:

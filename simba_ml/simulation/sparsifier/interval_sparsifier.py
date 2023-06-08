@@ -1,6 +1,4 @@
 """Removes a given relative amount of samples from a signal."""
-import typing
-
 import pandas as pd
 
 from simba_ml.simulation.sparsifier import sparsifier as sparsifier_module
@@ -15,9 +13,7 @@ class IntervalSparsifier(sparsifier_module.Sparsifier):
 
     def __init__(
         self,
-        *kinetic_parameters: tuple[
-            sparsifier_module.Sparsifier, typing.Union[int, str]
-        ],
+        *kinetic_parameters: tuple[sparsifier_module.Sparsifier, int | str],
     ) -> None:
         """Inits the `IntervalSparsifier`.
 
