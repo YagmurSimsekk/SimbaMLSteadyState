@@ -20,6 +20,7 @@ def test_pytorch_lightning_dense_neural_network_predicts_correct_output_shape():
         input_features=[0, 1], output_features=[0, 1]
     )
     config.training_params.epochs = 1
+    config.training_params.show_progress_bar = False
     model = dense_neural_network.DenseNeuralNetwork(time_series_params, config)
     model.train(train=[train])
     assert model.predict(train.to_numpy()).shape == (500, 1, 2)

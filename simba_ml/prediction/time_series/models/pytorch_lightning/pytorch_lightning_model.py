@@ -56,6 +56,7 @@ class TrainingParams:
     finetuning_learning_rate: float | None = None
     epochs: int = 10
     finetuning_epochs: int | None = None
+    show_progress_bar: bool = True
 
 
 @dataclasses.dataclass
@@ -165,12 +166,14 @@ class PytorchLightningModel(model.Model):
                 max_epochs=self.model_params.training_params.finetuning_epochs,
                 log_every_n_steps=len(train_loader) // 2,
                 accelerator=self.model_params.training_params.accelerator,
+                enable_progress_bar=self.model_params.training_params.show_progress_bar,
             )
         else:
             trainer = pl.Trainer(
                 max_epochs=self.model_params.training_params.epochs,
                 log_every_n_steps=len(train_loader) // 2,
                 accelerator=self.model_params.training_params.accelerator,
+                enable_progress_bar=self.model_params.training_params.show_progress_bar,
             )
         trainer.fit(self.model, train_loader)
 
