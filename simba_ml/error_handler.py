@@ -63,7 +63,7 @@ def confirm_sequence_contains_only_floats_or_ints(
 
 
 def confirm_number_is_greater_or_equal_to_0(
-    number: typing.Union[int, float], param_name: str = "param"
+    number: float, param_name: str = "param"
 ) -> None:
     """Checks that a number is greater or equal to 0.
 
@@ -78,9 +78,7 @@ def confirm_number_is_greater_or_equal_to_0(
         raise ValueError(f"{param_name} must be >= 0, not {number}.")
 
 
-def confirm_number_is_greater_than_0(
-    number: typing.Union[int, float], param_name: str = "param"
-) -> None:
+def confirm_number_is_greater_than_0(number: float, param_name: str = "param") -> None:
     """Checks that a number is greater than 0.
 
     Args:
@@ -95,9 +93,9 @@ def confirm_number_is_greater_than_0(
 
 
 def confirm_number_is_in_interval(
-    number: typing.Union[int, float],
-    start_value: typing.Union[int, float],
-    end_value: typing.Union[int, float],
+    number: float,
+    start_value: float,
+    end_value: float,
     include_left: bool = True,
     include_right: bool = True,
     param_name: str = "param",
@@ -123,7 +121,7 @@ def confirm_number_is_in_interval(
         interval_type_right = "inclusive" if include_right else "exclusive"
         raise ValueError(
             f"{param_name} must be a value between {start_value} ({interval_type_left})"
-            f"and {end_value} ({interval_type_right}), not {str(number)}."
+            f"and {end_value} ({interval_type_right}), not {number}."
         )
 
 

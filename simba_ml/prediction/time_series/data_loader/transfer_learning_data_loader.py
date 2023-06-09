@@ -1,6 +1,6 @@
 """This module provides the dataloader."""
 import os
-from typing import Optional, Tuple
+from typing import Tuple
 
 import pandas as pd
 import numpy as np
@@ -25,10 +25,10 @@ class TransferLearningDataLoader:
     """
 
     config: data_config.DataConfig
-    __X_test: Optional[npt.NDArray[np.float64]] = None
-    __y_test: Optional[npt.NDArray[np.float64]] = None
-    __train_observed: Optional[list[npt.NDArray[np.float64]]] = None
-    __train_synthetic: Optional[list[npt.NDArray[np.float64]]] = None
+    __X_test: npt.NDArray[np.float64] | None = None
+    __y_test: npt.NDArray[np.float64] | None = None
+    __train_observed: list[npt.NDArray[np.float64]] | None = None
+    __train_synthetic: list[npt.NDArray[np.float64]] | None = None
 
     def __init__(self, config: data_config.DataConfig) -> None:
         """Inits the DataLoader.

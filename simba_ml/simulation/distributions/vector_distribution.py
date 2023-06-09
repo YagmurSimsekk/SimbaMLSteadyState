@@ -1,7 +1,5 @@
 """Defines Vector Distribution."""
 
-import typing
-
 from simba_ml import error_handler
 from simba_ml.simulation import random_generator
 
@@ -17,7 +15,7 @@ class VectorDistribution:
         TypeError: If values contains a value which is not a float or int.
     """
 
-    def __init__(self, values: list[typing.Union[float, int]]) -> None:
+    def __init__(self, values: list[float]) -> None:
         """Inits VectorDistribution with the provided arguments.
 
         Args:

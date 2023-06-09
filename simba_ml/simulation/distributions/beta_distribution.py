@@ -1,7 +1,5 @@
 """Defines Beta Distribution."""
 
-import typing
-
 from scipy import stats
 
 from simba_ml import error_handler
@@ -23,9 +21,7 @@ class BetaDistribution:
         ValueError: If beta <= 0.
     """
 
-    def __init__(
-        self, alpha: typing.Union[float, int], beta: typing.Union[float, int]
-    ) -> None:
+    def __init__(self, alpha: float, beta: float) -> None:
         """Inits `BetaDistribution` with the provided arguments.
 
         Args:

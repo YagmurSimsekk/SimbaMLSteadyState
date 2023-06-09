@@ -1,7 +1,6 @@
 """Provides a model, which predicts next timesteps with a random forest regressor."""
 import enum
 import dataclasses
-import typing
 import sklearn as sk
 from sklearn import ensemble
 
@@ -49,7 +48,7 @@ class RandomForestRegressorConfig(sk_learn_model.SkLearnModelConfig):
     name: str = "Random Forest Regressor"
     criterion: Criterion = Criterion.squared_error
     n_estimators: int = 100
-    max_depth: typing.Optional[int] = None
+    max_depth: int | None = None
     min_samples_split: int = 2
     min_samples_leaf: int = 1
     min_weight_fraction_leaf: float = 0.0

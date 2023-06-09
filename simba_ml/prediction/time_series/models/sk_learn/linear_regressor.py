@@ -1,5 +1,4 @@
 """Provides a model, which predicts next timesteps from with a linear regressor."""
-import typing
 import dataclasses
 
 import sklearn as sk
@@ -23,7 +22,7 @@ class LinearRegressorConfig(sk_learn_model.SkLearnModelConfig):
 
     name: str = "Linear Regressor"
     fit_intercept: bool = True
-    n_jobs: typing.Optional[int] = None
+    n_jobs: int | None = None
     positive: bool = False
 
 

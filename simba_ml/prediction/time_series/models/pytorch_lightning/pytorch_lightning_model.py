@@ -2,7 +2,6 @@
      pytorch lightning architecture."""
 import abc
 import dataclasses
-import typing
 
 import torch
 from torch import utils
@@ -54,9 +53,9 @@ class TrainingParams:
     verbose: int = 0
     accelerator: str = "auto"
     learning_rate: float = 0.001
-    finetuning_learning_rate: typing.Optional[float] = None
+    finetuning_learning_rate: float | None = None
     epochs: int = 10
-    finetuning_epochs: typing.Optional[int] = None
+    finetuning_epochs: int | None = None
 
 
 @dataclasses.dataclass
