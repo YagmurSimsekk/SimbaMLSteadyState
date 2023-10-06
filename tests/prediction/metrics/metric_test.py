@@ -113,7 +113,13 @@ def test_mean_absolute_error_matrix_perfect_score():
 def test_mean_directional_accuracy():
     y_true = np.array([[[4, 5, 6], [6, 5, 4], [7, 7, 7]]])
     y_pred = np.array([[[3, 4, 5], [2, 4, 4], [3, 3, 3]]])
-    assert metrics.mean_directional_accuracy(y_true, y_pred) == 0.5
+    assert metrics.mean_directional_accuracy(y_true, y_pred) == (1/6)
+
+
+def test_prediction_trend_accuracy():
+    y_true = np.array([[[4, 5, 6], [6, 5, 4], [7, 7, 7]]])
+    y_pred = np.array([[[3, 4, 5], [2, 4, 4], [3, 3, 3]]])
+    assert metrics.prediction_trend_accuracy(y_true, y_pred) == 0.5
 
 
 def test_mean_squared_error_matrix_perfect_score():
@@ -214,60 +220,24 @@ def test_rmsle_2():
 
 def test_mean_absolute_scaled_error_1():
     y_true = np.array(
-        [
-            [
-                [1, 1, 1],
-                [2, 2, 2],
-                [3, 3, 3],
-            ],
-            [
-                [1, 1, 1],
-                [2, 2, 2],
-                [3, 3, 3],
-            ],
-        ]
+        [[[1, 1, 1], [2, 2, 2], [3, 3, 3],],
+         [[1, 1, 1], [2, 2, 2], [3, 3, 3],],]
     )
     y_pred = np.array(
-        [
-            [
-                [2, 2, 2],
-                [1, 1, 1],
-                [2, 2, 2],
-            ],
-            [[2, 2, 2], [1, 1, 1], [2, 2, 2]],
-        ]
+        [[[2, 2, 2], [1, 1, 1], [2, 2, 2],],
+         [[2, 2, 2], [1, 1, 1], [2, 2, 2],],]
     )
     assert metrics.mean_absolute_scaled_error(y_true, y_pred) == 1
 
 
 def test_mean_absolute_scaled_error_2():
     y_true = np.array(
-        [
-            [
-                [1, 1, 1],
-                [3, 3, 3],
-                [5, 5, 5],
-            ],
-            [
-                [1, 1, 1],
-                [3, 3, 3],
-                [5, 5, 5],
-            ],
-        ]
+        [[[1, 1, 1],[3, 3, 3],[5, 5, 5],],
+         [[1, 1, 1],[3, 3, 3],[5, 5, 5],],]
     )
     y_pred = np.array(
-        [
-            [
-                [5, 5, 5],
-                [7, 7, 7],
-                [9, 9, 9],
-            ],
-            [
-                [5, 5, 5],
-                [7, 7, 7],
-                [9, 9, 9],
-            ],
-        ]
+        [[[5, 5, 5],[7, 7, 7],[9, 9, 9],],
+         [[5, 5, 5],[7, 7, 7],[9, 9, 9],],]
     )
     assert metrics.mean_absolute_scaled_error(y_true, y_pred) == 2
 
