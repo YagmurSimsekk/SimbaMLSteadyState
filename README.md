@@ -6,7 +6,9 @@ SimbaML is an all-in-one framework for integrating prior knowledge of ODE models
 
 # Installation
 
-SimbaML requires Python 3.10 or newer and can be installed via pip:
+SimbaML requires Python >=3.10 and <=3.11.13 due to TensorFlow compatibility.
+
+SimbaML can be installed via pip:
 
 ```
 pip install simba_ml
@@ -23,7 +25,6 @@ pip install tensorflow>=2.10.0; platform_machine != 'arm64'
 ```
 
 For further details on how to install Tensorflow on ARM-based MacOS devices, see: https://developer.apple.com/metal/tensorflow-plugin/
-
 
 # Documentation
 

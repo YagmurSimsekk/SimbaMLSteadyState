@@ -373,11 +373,10 @@ def __rmsle_matrix(
 ) -> npt.NDArray[np.float64]:
     return np.array(
         [
-            sk_metrics.mean_squared_log_error(
+            sk_metrics.root_mean_squared_log_error(
                 y_true[:, i, :],
                 y_pred[:, i, :],
-                multioutput="raw_values",
-                squared=False,
+                multioutput="raw_values"
             )
             for i in range(y_true.shape[1])
         ]
@@ -405,7 +404,7 @@ def __msle_matrix(
     return np.array(
         [
             sk_metrics.mean_squared_log_error(
-                y_true[:, i, :], y_pred[:, i, :], multioutput="raw_values", squared=True
+                y_true[:, i, :], y_pred[:, i, :], multioutput="raw_values"
             )
             for i in range(y_true.shape[1])
         ]

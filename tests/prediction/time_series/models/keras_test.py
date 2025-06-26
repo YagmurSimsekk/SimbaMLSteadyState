@@ -31,6 +31,7 @@ def test_dense_neural_neural_network_predicts_correct_output_shape():
         training_params=keras_model.TrainingParams(epochs=1),
     )
     data = pd.DataFrame(np.random.default_rng().normal(0, 1, size=(500, 2)))
+
     time_series_params = time_series_config.TimeSeriesConfig(
         input_features=[0, 1],
         output_features=[0],
@@ -39,4 +40,6 @@ def test_dense_neural_neural_network_predicts_correct_output_shape():
     )
     dense = dense_neural_network.DenseNeuralNetwork(time_series_params, config)
     dense.train(train=[data])
-    assert dense.predict(data).shape == (500, 1, 1)
+    input_data = np.expand_dims(data.values, axis=1)
+    output = dense.predict(input_data)
+    assert output.shape == (500, 1, 1)

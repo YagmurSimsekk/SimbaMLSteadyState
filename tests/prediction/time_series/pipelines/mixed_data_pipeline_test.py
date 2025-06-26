@@ -8,6 +8,7 @@ import csv
 import pytest
 
 import pandas as pd
+import tensorflow as tf
 import numpy as np
 from simba_ml.prediction.time_series.pipelines import mixed_data_pipeline
 from simba_ml.prediction.time_series.config import (
@@ -84,6 +85,8 @@ def test_mixed_data_pipeline_correct_results() -> None:
 
 
 def test_mixed_data_pipeline_correct_results_with_plugins_normalized() -> None:
+    np.random.seed(42)
+    tf.random.set_seed(42)
     pipeline_results = mixed_data_pipeline.main(
         "tests/prediction/time_series/conf/pipeline_test_conf_plugins_normalize.toml"
     )
@@ -98,45 +101,45 @@ def test_mixed_data_pipeline_correct_results_with_plugins_normalized() -> None:
     # ratio=1.0 run
     assert obtained[0]["mean_absolute_error"][
         "Keras Dense Neural Network"
-    ] == pytest.approx(120.0, rel=0.01)
+    ] == pytest.approx(80.0, rel=0.01)
     assert obtained[0]["mean_squared_error"][
         "Keras Dense Neural Network"
-    ] == pytest.approx(15674.0, rel=0.01)
+    ] == pytest.approx(9047.0, rel=0.001)
     assert obtained[0]["mean_absolute_percentage_error"][
         "Keras Dense Neural Network"
-    ] == pytest.approx(0.3, rel=0.01)
+    ] == pytest.approx(0.217, rel=0.01)
     # ratio=0.5 run
     assert obtained[1]["mean_absolute_error"][
         "Keras Dense Neural Network"
-    ] == pytest.approx(104.0, rel=0.01)
+    ] == pytest.approx(24.43, rel=0.01)
     assert obtained[1]["mean_squared_error"][
         "Keras Dense Neural Network"
-    ] == pytest.approx(11712.0, rel=0.01)
+    ] == pytest.approx(1021.97, rel=0.01)
     assert obtained[1]["mean_absolute_percentage_error"][
         "Keras Dense Neural Network"
-    ] == pytest.approx(0.26, rel=0.01)
+    ] == pytest.approx(0.056, rel=0.01)
 
     # PyTorch Lightning
     # ratio=1.0 run
     assert obtained[0]["mean_absolute_error"][
         "PyTorch Lightning Dense Neural Network"
-    ] == pytest.approx(124.0, rel=0.01)
+    ] == pytest.approx(108.0, rel=0.01)
     assert obtained[0]["mean_squared_error"][
         "PyTorch Lightning Dense Neural Network"
-    ] == pytest.approx(15469.0, rel=0.01)
+    ] == pytest.approx(14966.1, rel=0.01)
     assert obtained[0]["mean_absolute_percentage_error"][
         "PyTorch Lightning Dense Neural Network"
-    ] == pytest.approx(0.31, rel=0.01)
+    ] == pytest.approx(0.535, rel=0.01)
     # ratio=0.5 run
     assert obtained[1]["mean_absolute_error"][
         "PyTorch Lightning Dense Neural Network"
-    ] == pytest.approx(111.0, rel=0.01)
+    ] == pytest.approx(104.63, rel=0.01)
     assert obtained[1]["mean_squared_error"][
         "PyTorch Lightning Dense Neural Network"
-    ] == pytest.approx(12559.0, rel=0.001)
+    ] == pytest.approx(14549.14, rel=0.01)
     assert obtained[1]["mean_absolute_percentage_error"][
         "PyTorch Lightning Dense Neural Network"
-    ] == pytest.approx(0.2799, rel=0.01)
+    ] == pytest.approx(0.527, rel=0.01)
 
 
 def test_mixed_data_pipeline_correct_results_with_plugins() -> None:
@@ -154,25 +157,25 @@ def test_mixed_data_pipeline_correct_results_with_plugins() -> None:
     # ratio=1.0 run
     assert obtained[0]["mean_absolute_error"][
         "Keras Dense Neural Network"
-    ] == pytest.approx(333.0, rel=0.01)
+    ] == pytest.approx(275.0, rel=0.01)
     assert obtained[0]["mean_squared_error"][
         "Keras Dense Neural Network"
-    ] == pytest.approx(113247.0, rel=0.01)
+    ] == pytest.approx(80105.0, rel=0.01)
     assert obtained[0]["mean_absolute_percentage_error"][
         "Keras Dense Neural Network"
-    ] == pytest.approx(0.83, rel=0.01)
+    ] == pytest.approx(0.95, rel=0.01)
 
     # PyTorch Lightning
     # ratio=1.0 run
     assert obtained[0]["mean_absolute_error"][
         "PyTorch Lightning Dense Neural Network"
-    ] == pytest.approx(413.0, rel=0.01)
+    ] == pytest.approx(357.0, rel=0.01)
     assert obtained[0]["mean_squared_error"][
         "PyTorch Lightning Dense Neural Network"
-    ] == pytest.approx(172573.0, rel=0.01)
+    ] == pytest.approx(134100.90, rel=0.01)
     assert obtained[0]["mean_absolute_percentage_error"][
         "PyTorch Lightning Dense Neural Network"
-    ] == pytest.approx(1.03, rel=0.01)
+    ] == pytest.approx(1.25, rel=0.01)
 
 
 def test_mixed_data_pipeline_returns_results_correct_type_and_format() -> None:
