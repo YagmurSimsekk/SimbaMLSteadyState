@@ -21,7 +21,7 @@ pip install pytorch-lightning>=1.9.0
 ```
 
 ```
-pip install tensorflow>=2.10.0; platform_machine != 'arm64'
+pip install tensorflow>=2.15.0; platform_machine != 'arm64'
 ```
 
 For further details on how to install Tensorflow on ARM-based MacOS devices, see: https://developer.apple.com/metal/tensorflow-plugin/
