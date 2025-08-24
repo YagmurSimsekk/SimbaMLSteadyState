@@ -3,3 +3,6 @@
 from simba_ml import _version
 
 __version__ = _version.get_versions()["version"]  # type: ignore[no-untyped-call]
+
+from . import _version
+__version__ = _version.get_versions()['version']

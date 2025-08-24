@@ -4,6 +4,8 @@ import click
 from simba_ml.cli import generate_data
 from simba_ml.cli import start_prediction
 from simba_ml.cli.problem_viewer import run_problem_viewer
+from simba_ml.cli import parse_sbml
+from simba_ml.cli import biomodels
 
 
 @click.group()
@@ -14,6 +16,8 @@ def main() -> None:
 main.add_command(generate_data.generate_data)
 main.add_command(start_prediction.start_prediction)
 main.add_command(run_problem_viewer.run_problem_viewer)
+main.add_command(parse_sbml.parse_sbml)
+main.add_command(biomodels.biomodels)
 
 
 if __name__ == "__main__":
