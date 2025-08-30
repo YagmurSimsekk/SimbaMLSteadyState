@@ -16,20 +16,20 @@ logger = logging.getLogger(__name__)
 class MainSBMLParser:
     """
     Main SBML parser that detects SBML level/version and routes to appropriate parser.
-    
+
     Supports commonly used SBML versions for ODE models:
     - Level 2: Version 4, 5
     - Level 3: Version 1, 2
     """
-    
+
     # Define supported SBML level/version combinations
     SUPPORTED_VERSIONS = {
         (2, 4): "level_2.parser",
-        (2, 5): "level_2.parser", 
+        (2, 5): "level_2.parser",
         (3, 1): "level_3.parser",
         (3, 2): "level_3.parser"
     }
-    
+
     def __init__(self, file_path):
         self.file_path = file_path
         self.level = None
@@ -39,10 +39,10 @@ class MainSBMLParser:
     def detect_version_and_level(self):
         """
         Parse SBML file to detect level and version.
-        
+
         Returns:
             tuple: (level, version, model) from the SBML document
-            
+
         Raises:
             SBMLParsingError: If file cannot be parsed or contains errors
         """
@@ -63,14 +63,14 @@ class MainSBMLParser:
 
             level = document.getLevel()
             version = document.getVersion()
-            
+
             self.level = level
             self.version = version
             self.model = model
-            
+
             logger.info(f"Detected SBML Level {level}, Version {version}")
             return level, version, model
-            
+
         except Exception as e:
             if isinstance(e, (SBMLParsingError, UnsupportedSBMLVersionError)):
                 raise
@@ -79,37 +79,51 @@ class MainSBMLParser:
     def validate_ode_model(self, model):
         """
         Validate that the SBML model represents an ODE system.
-        
+
         Args:
             model: SBML model object
-            
+
         Raises:
             SBMLParsingError: If model doesn't appear to be ODE-based
         """
-        if model.getListOfReactions().size() == 0:
-            logger.warning("No reactions found - this may not be a dynamic ODE model")
-            
-        # Check for basic ODE model requirements
+        num_reactions = model.getListOfReactions().size()
+        num_rules = model.getListOfRules().size()
+
+        # Check for rate rules (direct ODE specification)
+        has_rate_rules = False
+        if num_rules > 0:
+            for rule in model.getListOfRules():
+                if rule.getTypeCode() == 23:  # SBML_RATE_RULE
+                    has_rate_rules = True
+                    break
+
+        # Check for reactions with kinetic laws
         has_kinetic_laws = False
-        for reaction in model.getListOfReactions():
-            if reaction.getKineticLaw() is not None:
-                has_kinetic_laws = True
-                break
-                
-        if not has_kinetic_laws and model.getListOfReactions().size() > 0:
-            logger.warning("Reactions found but no kinetic laws - this may not be suitable for ODE simulation")
+        if num_reactions > 0:
+            for reaction in model.getListOfReactions():
+                if reaction.getKineticLaw() is not None:
+                    has_kinetic_laws = True
+                    break
+
+        # Determine if this is a valid ODE model
+        if num_reactions == 0 and not has_rate_rules:
+            logger.warning("No reactions or rate rules found - this may not be a dynamic ODE model")
+        elif num_reactions > 0 and not has_kinetic_laws and not has_rate_rules:
+            logger.warning("Reactions found but no kinetic laws or rate rules - this may not be suitable for ODE simulation")
+        elif has_rate_rules and num_reactions == 0:
+            logger.info(f"Rule-based ODE model detected with {num_rules} rules")
 
     def get_parser_module(self, level, version):
         """
         Get the appropriate parser module for the given level/version.
-        
+
         Args:
             level: SBML level
             version: SBML version
-            
+
         Returns:
             str: Module path for the parser
-            
+
         Raises:
             UnsupportedSBMLVersionError: If level/version combination is not supported
         """
@@ -119,28 +133,28 @@ class MainSBMLParser:
                 f"SBML Level {level} Version {version} is not supported. "
                 f"Supported versions: {', '.join(supported_versions)}"
             )
-        
+
         return self.SUPPORTED_VERSIONS[(level, version)]
 
     def process(self):
         """
         Main processing method that detects version and delegates to appropriate parser.
-        
+
         Returns:
             Parsed model data structure
-            
+
         Raises:
             UnsupportedSBMLVersionError: If SBML version is not supported
             SBMLParsingError: If parsing fails
         """
         level, version, model = self.detect_version_and_level()
-        
+
         # Validate ODE model characteristics
         self.validate_ode_model(model)
-        
+
         # Get and instantiate the appropriate parser
         parser_module_path = self.get_parser_module(level, version)
-        
+
         try:
             if parser_module_path == "level_2.parser":
                 from .level_2.parser import Parser as VersionParser
@@ -148,16 +162,16 @@ class MainSBMLParser:
                 from .level_3.parser import Parser as VersionParser
             else:
                 raise ImportError(f"Unknown parser module: {parser_module_path}")
-                
+
             parser = VersionParser(self.file_path, level, version)
             parsed_data = parser.parse()
-            
+
             # Add metadata with file path for units parsing
             if 'metadata' not in parsed_data:
                 parsed_data['metadata'] = {}
             parsed_data['metadata']['sbml_file_path'] = self.file_path
-            
+
             return parsed_data
-            
+
         except ImportError as e:
             raise SBMLParsingError(f"Failed to import parser for Level {level} Version {version}: {str(e)}")

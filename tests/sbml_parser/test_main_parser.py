@@ -9,7 +9,7 @@ from simba_ml.sbml_parser.main_parser import MainSBMLParser, SBMLParsingError, U
 
 class TestMainSBMLParser:
     """Test the main SBML parser functionality."""
-    
+
     def test_init(self):
         """Test parser initialization."""
         parser = MainSBMLParser("test_file.xml")
@@ -22,7 +22,7 @@ class TestMainSBMLParser:
         """Test that supported versions are correctly defined."""
         expected_versions = {
             (2, 4): "level_2.parser",
-            (2, 5): "level_2.parser", 
+            (2, 5): "level_2.parser",
             (3, 1): "level_3.parser",
             (3, 2): "level_3.parser"
         }
@@ -31,29 +31,29 @@ class TestMainSBMLParser:
     def test_get_parser_module_supported(self):
         """Test getting parser module for supported versions."""
         parser = MainSBMLParser("test.xml")
-        
+
         # Test Level 2 versions
         assert parser.get_parser_module(2, 4) == "level_2.parser"
         assert parser.get_parser_module(2, 5) == "level_2.parser"
-        
-        # Test Level 3 versions  
+
+        # Test Level 3 versions
         assert parser.get_parser_module(3, 1) == "level_3.parser"
         assert parser.get_parser_module(3, 2) == "level_3.parser"
 
     def test_get_parser_module_unsupported(self):
         """Test error for unsupported versions."""
         parser = MainSBMLParser("test.xml")
-        
+
         with pytest.raises(UnsupportedSBMLVersionError) as excinfo:
             parser.get_parser_module(1, 2)
-        
+
         assert "Level 1 Version 2 is not supported" in str(excinfo.value)
         assert "Supported versions:" in str(excinfo.value)
 
     def test_detect_version_and_level_invalid_file(self):
         """Test error handling for invalid file."""
         parser = MainSBMLParser("nonexistent_file.xml")
-        
+
         with pytest.raises(SBMLParsingError):
             parser.detect_version_and_level()
 
@@ -67,27 +67,27 @@ class TestMainSBMLParser:
             <compartment id="cell" constant="true" spatialDimensions="3" size="1"/>
         </listOfCompartments>
         <listOfSpecies>
-            <species id="A" compartment="cell" hasOnlySubstanceUnits="false" 
+            <species id="A" compartment="cell" hasOnlySubstanceUnits="false"
                      boundaryCondition="false" constant="false"/>
         </listOfSpecies>
     </model>
 </sbml>'''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as f:
             f.write(sbml_content)
             f.flush()
-            
+
             try:
                 parser = MainSBMLParser(f.name)
                 level, version, model = parser.detect_version_and_level()
-                
+
                 # Should not raise error, just log warning
                 parser.validate_ode_model(model)
-                
+
                 assert level == 3
                 assert version == 1
                 assert model is not None
-                
+
             finally:
                 os.unlink(f.name)
 
@@ -100,9 +100,9 @@ class TestMainSBMLParser:
             <compartment id="cell" constant="true" spatialDimensions="3" size="1"/>
         </listOfCompartments>
         <listOfSpecies>
-            <species id="A" compartment="cell" hasOnlySubstanceUnits="false" 
+            <species id="A" compartment="cell" hasOnlySubstanceUnits="false"
                      boundaryCondition="false" constant="false" initialConcentration="1.0"/>
-            <species id="B" compartment="cell" hasOnlySubstanceUnits="false" 
+            <species id="B" compartment="cell" hasOnlySubstanceUnits="false"
                      boundaryCondition="false" constant="false" initialConcentration="0.0"/>
         </listOfSpecies>
         <listOfReactions>
@@ -129,29 +129,29 @@ class TestMainSBMLParser:
         </listOfReactions>
     </model>
 </sbml>'''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as f:
             f.write(sbml_content)
             f.flush()
-            
+
             try:
                 parser = MainSBMLParser(f.name)
                 level, version, model = parser.detect_version_and_level()
-                
+
                 assert level == 3
                 assert version == 2
                 assert model is not None
                 assert parser.level == 3
                 assert parser.version == 2
                 assert parser.model is not None
-                
+
             finally:
                 os.unlink(f.name)
 
 
 class TestSBMLParsingIntegration:
     """Integration tests for SBML parsing."""
-    
+
     def create_test_sbml_file(self, level, version, content_additions=""):
         """Helper to create test SBML files."""
         base_content = f'''<?xml version="1.0" encoding="UTF-8"?>
@@ -161,7 +161,7 @@ class TestSBMLParsingIntegration:
             <compartment id="cell" constant="true" spatialDimensions="3" size="1.0"/>
         </listOfCompartments>
         <listOfSpecies>
-            <species id="A" compartment="cell" hasOnlySubstanceUnits="false" 
+            <species id="A" compartment="cell" hasOnlySubstanceUnits="false"
                      boundaryCondition="false" constant="false" initialConcentration="1.0"/>
         </listOfSpecies>
         <listOfReactions>
@@ -184,7 +184,7 @@ class TestSBMLParsingIntegration:
         {content_additions}
     </model>
 </sbml>'''
-        
+
         temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False)
         temp_file.write(base_content)
         temp_file.flush()
@@ -194,64 +194,64 @@ class TestSBMLParsingIntegration:
     def test_level_2_version_4_parsing(self):
         """Test parsing Level 2 Version 4 files."""
         test_file = self.create_test_sbml_file(2, 4)
-        
+
         try:
             parser = MainSBMLParser(test_file)
             result = parser.process()
-            
+
             assert isinstance(result, dict)
             assert 'sbml_info' in result
             assert result['sbml_info']['level'] == 2
             assert result['sbml_info']['version'] == 4
-            
+
         finally:
             os.unlink(test_file)
 
     def test_level_2_version_5_parsing(self):
         """Test parsing Level 2 Version 5 files."""
         test_file = self.create_test_sbml_file(2, 5)
-        
+
         try:
             parser = MainSBMLParser(test_file)
             result = parser.process()
-            
+
             assert isinstance(result, dict)
             assert 'sbml_info' in result
             assert result['sbml_info']['level'] == 2
             assert result['sbml_info']['version'] == 5
-            
+
         finally:
             os.unlink(test_file)
 
     def test_level_3_version_1_parsing(self):
         """Test parsing Level 3 Version 1 files."""
         test_file = self.create_test_sbml_file(3, 1)
-        
+
         try:
             parser = MainSBMLParser(test_file)
             result = parser.process()
-            
+
             assert isinstance(result, dict)
             assert 'sbml_info' in result
             assert result['sbml_info']['level'] == 3
             assert result['sbml_info']['version'] == 1
-            
+
         finally:
             os.unlink(test_file)
 
     def test_level_3_version_2_parsing(self):
         """Test parsing Level 3 Version 2 files."""
         test_file = self.create_test_sbml_file(3, 2)
-        
+
         try:
             parser = MainSBMLParser(test_file)
             result = parser.process()
-            
+
             assert isinstance(result, dict)
             assert 'sbml_info' in result
             assert result['sbml_info']['level'] == 3
             assert result['sbml_info']['version'] == 2
-            
+
         finally:
             os.unlink(test_file)
 
@@ -266,19 +266,19 @@ class TestSBMLParsingIntegration:
         </listOfCompartments>
     </model>
 </sbml>'''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as f:
             f.write(sbml_content)
             f.flush()
-            
+
             try:
                 parser = MainSBMLParser(f.name)
-                
+
                 with pytest.raises(UnsupportedSBMLVersionError) as excinfo:
                     parser.process()
-                
+
                 assert "Level 1 Version 2 is not supported" in str(excinfo.value)
-                
+
             finally:
                 os.unlink(f.name)
 
@@ -292,17 +292,17 @@ class TestSBMLParsingIntegration:
         </listOfSpecies>
     </model>
 </sbml>'''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as f:
             f.write(malformed_content)
             f.flush()
-            
+
             try:
                 parser = MainSBMLParser(f.name)
                 # Should not raise error during parsing, but might log warnings
                 result = parser.process()
                 assert isinstance(result, dict)
-                
+
             finally:
                 os.unlink(f.name)
 

@@ -25,3 +25,4 @@ wandb/
 lightning_logs/
 *.ipynb
 man
+.pre-commit-config.yaml

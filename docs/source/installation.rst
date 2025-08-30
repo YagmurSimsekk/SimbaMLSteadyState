@@ -6,7 +6,7 @@ Installation
 SimbaML requires Python 3.10 or newer and can be installed via pip:
 
 ..  code-block:: bash
-    
+
     pip install simba_ml
 
 Check if installation was successfull by running:

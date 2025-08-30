@@ -21,7 +21,7 @@ Test the installation by running tests and lints:
     # or
 
     make check # This will run all tests and lints
- 
+
 
 Coding Standards
 ----------------

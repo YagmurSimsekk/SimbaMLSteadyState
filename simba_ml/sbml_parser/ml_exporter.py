@@ -1,7 +1,7 @@
 """
-ML Data Exporter for SBML models.
+Data Exporter for SBML models.
 
-Converts parsed SBML data into machine learning-ready formats including:
+Converts parsed SBML data into numerical solver ready formats including:
 - Structured DataFrames for species, reactions, parameters
 - Network matrices (stoichiometry, adjacency)
 - Feature vectors for ML training
@@ -16,13 +16,13 @@ from typing import Dict, List, Tuple, Optional, Any
 from pathlib import Path
 
 
-class SBMLMLExporter:
-    """Export SBML parsed data in machine learning-ready formats."""
-    
+class SBMLExporter:
+    """Export SBML parsed data in different formats."""
+
     def __init__(self, parsed_data: Dict[str, Any]):
         """
         Initialize with parsed SBML data.
-        
+
         Args:
             parsed_data: Output from MainSBMLParser.process()
         """
@@ -32,31 +32,31 @@ class SBMLMLExporter:
         self.reactions = parsed_data['reactions']
         self.parameters = parsed_data['parameters']
         self.compartments = parsed_data['compartments']
-        
+
         # Process species to separate dynamic from boundary
         self._process_species_types()
         self._parse_units_system()
         self._normalize_species_units()
-    
+
     def _process_species_types(self):
         """Separate dynamic species from boundary/constant species."""
         self.dynamic_species = []
         self.boundary_species = []
-        
+
         for sp in self.species:
             is_boundary = sp.get('boundary_condition', False)
             is_constant = sp.get('constant', False)
-            
+
             if is_boundary or is_constant:
                 self.boundary_species.append(sp)
             else:
                 self.dynamic_species.append(sp)
-    
+
     def _parse_units_system(self):
         """Parse SBML units system using libSBML."""
         # Initialize units info based on SBML Level
         level = self.sbml_info['level']
-        
+
         if level == 2:
             # Level 2: Use SBML specification defaults
             self.units_info = {
@@ -84,7 +84,7 @@ class SBMLMLExporter:
                 'substance_multiplier': 1.0,
                 'time_multiplier': 1.0
             }
-        
+
         # We need to re-parse with libSBML to get units info
         # This is necessary because the main parser doesn't extract unit definitions
         if 'sbml_file_path' in self.data.get('metadata', {}):
@@ -92,26 +92,26 @@ class SBMLMLExporter:
         else:
             # If file path not available, we'll work with defaults
             return
-            
+
         try:
             reader = libsbml.SBMLReader()
             doc = reader.readSBML(file_path)
             model = doc.getModel()
-            
+
             # Parse unit definitions
             self._extract_unit_definitions(model)
-            
+
         except Exception as e:
             # If units parsing fails, use defaults
             pass
-    
+
     def _extract_unit_definitions(self, model):
         """Extract unit definitions from libSBML model."""
         # Check for custom unit definitions
         for i in range(model.getNumUnitDefinitions()):
             unit_def = model.getUnitDefinition(i)
             unit_id = unit_def.getId()
-            
+
             if unit_id in ['substance', 'time', 'volume']:
                 # Parse the unit definition
                 if unit_def.getNumUnits() > 0:
@@ -119,10 +119,10 @@ class SBMLMLExporter:
                     kind = libsbml.UnitKind_toString(unit.getKind())
                     scale = unit.getScale()
                     multiplier = unit.getMultiplier()
-                    
+
                     # Calculate actual multiplier: multiplier * 10^scale
                     actual_multiplier = multiplier * (10 ** scale)
-                    
+
                     if unit_id == 'substance':
                         self.units_info['substance_unit'] = kind
                         self.units_info['substance_multiplier'] = actual_multiplier
@@ -131,10 +131,10 @@ class SBMLMLExporter:
                         self.units_info['time_multiplier'] = actual_multiplier
                     elif unit_id == 'volume':
                         self.units_info['volume_unit'] = kind
-        
+
         # Set model-level units if specified
         level = self.sbml_info['level']
-        
+
         if model.isSetSubstanceUnits():
             substance_unit_ref = model.getSubstanceUnits()
             # For Level 3, this should reference a unit definition
@@ -143,7 +143,7 @@ class SBMLMLExporter:
                 pass
             else:
                 self.units_info['substance_unit'] = substance_unit_ref
-                
+
         if model.isSetTimeUnits():
             time_unit_ref = model.getTimeUnits()
             # For Level 3, this should reference a unit definition
@@ -152,7 +152,7 @@ class SBMLMLExporter:
                 pass
             else:
                 self.units_info['time_unit'] = time_unit_ref
-                
+
         if model.isSetVolumeUnits():
             volume_unit_ref = model.getVolumeUnits()
             # For Level 3, this should reference a unit definition
@@ -161,90 +161,100 @@ class SBMLMLExporter:
                 pass
             else:
                 self.units_info['volume_unit'] = volume_unit_ref
-        
+
         # For Level 3, validate that all required units are explicitly defined
         if level == 3:
             self._validate_level3_units()
-    
+
     def _validate_level3_units(self):
         """Validate that Level 3 models have required units explicitly defined."""
         import logging
         logger = logging.getLogger(__name__)
-        
+
         missing_units = []
-        
+
         # Check if model actually needs these units
         needs_substance = self._model_uses_concentrations_or_amounts()
-        needs_time = self._model_has_kinetic_laws()
+        needs_time = self._model_is_ode_ready()
         needs_volume = self._model_uses_concentrations()
-        
+
         if needs_substance and self.units_info['substance_unit'] is None:
             missing_units.append('substance')
         if needs_time and self.units_info['time_unit'] is None:
-            missing_units.append('time') 
+            missing_units.append('time')
         if needs_volume and self.units_info['volume_unit'] is None:
             missing_units.append('volume')
-        
+
         if missing_units:
             error_msg = (f"SBML Level 3 model missing required unit definitions: {', '.join(missing_units)}. "
                         f"Level 3 specification requires all used units to be explicitly defined.")
             logger.error(error_msg)
             raise ValueError(error_msg)
-    
+
     def _model_uses_concentrations_or_amounts(self) -> bool:
         """Check if model uses species amounts or concentrations."""
-        return any(sp.get('initial_concentration') is not None or 
-                  sp.get('initial_amount') is not None 
+        return any(sp.get('initial_concentration') is not None or
+                  sp.get('initial_amount') is not None
                   for sp in self.species)
-    
+
+    def _model_is_ode_ready(self) -> bool:
+        """Check if model is ready for ODE simulation (has kinetic laws or rate rules)."""
+        # Check reactions with kinetic laws
+        has_kinetic_laws = any(rxn.get('kinetic_law') is not None for rxn in self.reactions)
+
+        # Check for rate rules
+        has_rate_rules = any(rule.get('type') == 'rate' for rule in getattr(self, 'rules', []))
+
+        return has_kinetic_laws or has_rate_rules
+
     def _model_has_kinetic_laws(self) -> bool:
         """Check if model has kinetic laws (needs time units)."""
         return any(rxn.get('kinetic_law') is not None for rxn in self.reactions)
-    
+
     def _model_uses_concentrations(self) -> bool:
         """Check if model uses concentrations (needs volume units)."""
         return any(sp.get('initial_concentration') is not None for sp in self.species)
-    
-    
+
+
     def _get_compartment_size(self, compartment_id: str) -> float:
         """Get size of a compartment by ID."""
         for comp in self.compartments:
             if comp['id'] == compartment_id:
                 return comp.get('size', 1.0)
         return 1.0  # Default size if not found
-    
+
     def _normalize_species_units(self):
         """Convert all species to concentration units for consistent ODE formulation."""
         for sp in self.species:
             compartment_size = self._get_compartment_size(sp['compartment'])
-            
+
             # Convert to concentration if needed
             if sp.get('initial_concentration') is not None:
                 # Already in concentration units
                 sp['normalized_concentration'] = sp['initial_concentration']
                 sp['units_type'] = 'concentration'
-                
+
             elif sp.get('initial_amount') is not None:
                 # Convert amount to concentration: [X] = amount / volume
                 sp['normalized_concentration'] = sp['initial_amount'] / compartment_size
                 sp['units_type'] = 'amount_converted'
-                
+
             else:
                 # No initial condition specified
                 sp['normalized_concentration'] = 0.0
                 sp['units_type'] = 'default'
-            
+
             # Add units information from parsed SBML
             sp['substance_unit'] = self.units_info['substance_unit']
             sp['substance_multiplier'] = self.units_info['substance_multiplier']
             sp['time_unit'] = self.units_info['time_unit']
             sp['time_multiplier'] = self.units_info['time_multiplier']
             sp['volume_unit'] = self.units_info['volume_unit']
-    
+
     def get_dynamic_species_concentrations(self) -> Tuple[np.ndarray, List[str]]:
         """
         Get normalized initial concentrations for dynamic species only.
-        
+
         Returns:
             tuple: (concentrations_array, species_ids)
                 - concentrations_array: Initial concentrations for ODE system
@@ -252,17 +262,17 @@ class SBMLMLExporter:
         """
         concentrations = []
         species_ids = []
-        
+
         for sp in self.dynamic_species:
             concentrations.append(sp['normalized_concentration'])
             species_ids.append(sp['id'])
-        
+
         return np.array(concentrations), species_ids
-    
+
     def get_boundary_species_info(self) -> List[Dict[str, Any]]:
         """
         Get information about boundary/constant species.
-        
+
         Returns:
             list: Information about boundary species that remain constant
         """
@@ -275,16 +285,16 @@ class SBMLMLExporter:
                 'constant': sp.get('constant', False)
             })
         return boundary_info
-        
+
     def to_dataframes(self) -> Dict[str, pd.DataFrame]:
         """
         Convert parsed data to pandas DataFrames.
-        
+
         Returns:
             dict: DataFrames for different components
         """
         dataframes = {}
-        
+
         # Species DataFrame
         if self.species:
             species_data = []
@@ -308,7 +318,7 @@ class SBMLMLExporter:
                     'is_dynamic': not (sp.get('boundary_condition', False) or sp.get('constant', False))
                 })
             dataframes['species'] = pd.DataFrame(species_data)
-        
+
         # Reactions DataFrame
         if self.reactions:
             reaction_data = []
@@ -324,7 +334,7 @@ class SBMLMLExporter:
                     'num_products': len(rxn.get('products', [])),
                     'num_modifiers': len(rxn.get('modifiers', []))
                 }
-                
+
                 # Add kinetic law info if available
                 if rxn.get('kinetic_law'):
                     kl = rxn['kinetic_law']
@@ -333,10 +343,10 @@ class SBMLMLExporter:
                         'kinetic_math': kl.get('math'),
                         'num_local_parameters': len(kl.get('parameters', []))
                     })
-                
+
                 reaction_data.append(rxn_row)
             dataframes['reactions'] = pd.DataFrame(reaction_data)
-        
+
         # Parameters DataFrame
         if self.parameters:
             param_data = []
@@ -349,7 +359,7 @@ class SBMLMLExporter:
                     'constant': param.get('constant', True)
                 })
             dataframes['parameters'] = pd.DataFrame(param_data)
-        
+
         # Compartments DataFrame
         if self.compartments:
             comp_data = []
@@ -362,20 +372,20 @@ class SBMLMLExporter:
                     'constant': comp.get('constant', True)
                 })
             dataframes['compartments'] = pd.DataFrame(comp_data)
-        
+
         return dataframes
-    
+
     def get_stoichiometry_matrix(self, dynamic_only: bool = True) -> Tuple[np.ndarray, List[str], List[str]]:
         """
         Create stoichiometry matrix for the reaction network.
-        
+
         Args:
             dynamic_only: If True, only include non-boundary, non-constant species
-        
+
         Returns:
             tuple: (matrix, species_ids, reaction_ids)
                 - matrix: shape (n_dynamic_species, n_reactions) or (n_species, n_reactions)
-                - species_ids: list of species identifiers  
+                - species_ids: list of species identifiers
                 - reaction_ids: list of reaction identifiers
         """
         if dynamic_only:
@@ -384,15 +394,15 @@ class SBMLMLExporter:
         else:
             species_list = self.species
             species_ids = [sp['id'] for sp in species_list]
-            
+
         reaction_ids = [rxn['id'] for rxn in self.reactions]
-        
+
         # Create species index mapping
         species_idx = {sp_id: i for i, sp_id in enumerate(species_ids)}
-        
+
         # Initialize stoichiometry matrix
         S = np.zeros((len(species_ids), len(reaction_ids)))
-        
+
         for j, reaction in enumerate(self.reactions):
             # Add reactants (negative stoichiometry)
             for reactant in reaction.get('reactants', []):
@@ -401,7 +411,7 @@ class SBMLMLExporter:
                     i = species_idx[sp_id]
                     stoich = reactant.get('stoichiometry', 1.0)
                     S[i, j] -= stoich
-            
+
             # Add products (positive stoichiometry)
             for product in reaction.get('products', []):
                 sp_id = product['species']
@@ -409,16 +419,16 @@ class SBMLMLExporter:
                     i = species_idx[sp_id]
                     stoich = product.get('stoichiometry', 1.0)
                     S[i, j] += stoich
-        
+
         return S, species_ids, reaction_ids
-    
+
     def get_adjacency_matrix(self, include_modifiers: bool = True) -> Tuple[np.ndarray, List[str]]:
         """
         Create adjacency matrix representing species-species interactions.
-        
+
         Args:
             include_modifiers: Whether to include modifier relationships
-            
+
         Returns:
             tuple: (adjacency_matrix, species_ids)
                 - adjacency_matrix: shape (n_species, n_species)
@@ -426,22 +436,22 @@ class SBMLMLExporter:
         """
         species_ids = [sp['id'] for sp in self.species]
         species_idx = {sp_id: i for i, sp_id in enumerate(species_ids)}
-        
+
         # Initialize adjacency matrix
         A = np.zeros((len(species_ids), len(species_ids)))
-        
+
         for reaction in self.reactions:
             reactant_ids = [r['species'] for r in reaction.get('reactants', [])]
             product_ids = [p['species'] for p in reaction.get('products', [])]
             modifier_ids = [m['species'] for m in reaction.get('modifiers', [])] if include_modifiers else []
-            
+
             # Reactants to products
             for reactant_id in reactant_ids:
                 for product_id in product_ids:
                     if reactant_id in species_idx and product_id in species_idx:
                         i, j = species_idx[reactant_id], species_idx[product_id]
                         A[i, j] = 1
-            
+
             # Modifiers to products (regulatory interactions)
             if include_modifiers:
                 for modifier_id in modifier_ids:
@@ -449,18 +459,18 @@ class SBMLMLExporter:
                         if modifier_id in species_idx and product_id in species_idx:
                             i, j = species_idx[modifier_id], species_idx[product_id]
                             A[i, j] = 1
-        
+
         return A, species_ids
-    
+
     def get_feature_vectors(self) -> Dict[str, np.ndarray]:
         """
         Extract feature vectors for ML training.
-        
+
         Returns:
             dict: Feature vectors for different components
         """
         features = {}
-        
+
         # Species features
         if self.species:
             species_features = []
@@ -473,7 +483,7 @@ class SBMLMLExporter:
                 ]
                 species_features.append(feat)
             features['species'] = np.array(species_features)
-        
+
         # Reaction features
         if self.reactions:
             reaction_features = []
@@ -488,12 +498,12 @@ class SBMLMLExporter:
                 ]
                 reaction_features.append(feat)
             features['reactions'] = np.array(reaction_features)
-        
+
         # Network topology features
         if self.species and self.reactions:
             S, _, _ = self.get_stoichiometry_matrix()
             A, _ = self.get_adjacency_matrix()
-            
+
             # Network-level features
             network_features = [
                 len(self.species),  # Number of species
@@ -504,13 +514,13 @@ class SBMLMLExporter:
                 np.mean(np.sum(A, axis=1)),  # Average adjacency degree
             ]
             features['network'] = np.array(network_features)
-        
+
         return features
-    
+
     def get_ml_dataset(self) -> Dict[str, Any]:
         """
-        Get comprehensive ML-ready dataset.
-        
+        Get comprehensive dataset.
+
         Returns:
             dict: Complete dataset with matrices, features, and metadata
         """
@@ -523,47 +533,49 @@ class SBMLMLExporter:
                 'num_species': len(self.species),
                 'num_reactions': len(self.reactions),
                 'num_parameters': len(self.parameters),
-                'has_kinetic_laws': any(r.get('kinetic_law') for r in self.reactions)
+                'has_kinetic_laws': any(r.get('kinetic_law') for r in self.reactions),
+                'has_rate_rules': any(rule.get('type') == 'rate' for rule in getattr(self, 'rules', [])),
+                'ode_ready': self._model_is_ode_ready()
             }
         }
-        
+
         # Add matrices
         if self.species and self.reactions:
             S, species_ids, reaction_ids = self.get_stoichiometry_matrix()
             A, _ = self.get_adjacency_matrix()
-            
+
             dataset['matrices'] = {
                 'stoichiometry': S,
                 'adjacency': A,
                 'species_ids': species_ids,
                 'reaction_ids': reaction_ids
             }
-        
+
         # Add feature vectors
         dataset['features'] = self.get_feature_vectors()
-        
+
         # Add DataFrames
         dataset['dataframes'] = self.to_dataframes()
-        
+
         return dataset
-    
+
     def export_to_files(self, output_dir: str, format: str = 'csv') -> Dict[str, str]:
         """
         Export data to files for ML workflows.
-        
+
         Args:
             output_dir: Directory to save files
             format: Export format ('csv', 'json', 'npz', 'pickle')
-            
+
         Returns:
             dict: Mapping of data type to file path
         """
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
-        
+
         model_name = self.sbml_info.get('model_id', 'sbml_model')
         exported_files = {}
-        
+
         if format == 'csv':
             # Export DataFrames as CSV
             dataframes = self.to_dataframes()
@@ -571,24 +583,24 @@ class SBMLMLExporter:
                 file_path = output_path / f"{model_name}_{name}.csv"
                 df.to_csv(file_path, index=False)
                 exported_files[name] = str(file_path)
-            
+
             # Export matrices as CSV
             if self.species and self.reactions:
                 S, species_ids, reaction_ids = self.get_stoichiometry_matrix()
                 A, _ = self.get_adjacency_matrix()
-                
+
                 # Stoichiometry matrix with labels
                 S_df = pd.DataFrame(S, index=species_ids, columns=reaction_ids)
                 S_file = output_path / f"{model_name}_stoichiometry.csv"
                 S_df.to_csv(S_file)
                 exported_files['stoichiometry'] = str(S_file)
-                
+
                 # Adjacency matrix with labels
                 A_df = pd.DataFrame(A, index=species_ids, columns=species_ids)
                 A_file = output_path / f"{model_name}_adjacency.csv"
                 A_df.to_csv(A_file)
                 exported_files['adjacency'] = str(A_file)
-        
+
         elif format == 'json':
             # Export as JSON
             ml_dataset = self.get_ml_dataset()
@@ -599,7 +611,7 @@ class SBMLMLExporter:
                 elif isinstance(obj, pd.DataFrame):
                     return obj.to_dict('records')
                 return obj
-            
+
             json_data = {}
             for key, value in ml_dataset.items():
                 if key == 'dataframes':
@@ -610,28 +622,28 @@ class SBMLMLExporter:
                     json_data[key] = {k: convert_numpy(v) for k, v in value.items()}
                 else:
                     json_data[key] = value
-            
+
             json_file = output_path / f"{model_name}_ml_data.json"
             with open(json_file, 'w') as f:
                 json.dump(json_data, f, indent=2)
             exported_files['ml_data'] = str(json_file)
-        
+
         elif format == 'npz':
             # Export as NumPy compressed format
             ml_dataset = self.get_ml_dataset()
             arrays_to_save = {}
-            
+
             # Flatten all numpy arrays with descriptive names
             if 'matrices' in ml_dataset:
                 arrays_to_save['stoichiometry_matrix'] = ml_dataset['matrices']['stoichiometry']
                 arrays_to_save['adjacency_matrix'] = ml_dataset['matrices']['adjacency']
-            
+
             if 'features' in ml_dataset:
                 for feat_name, feat_array in ml_dataset['features'].items():
                     arrays_to_save[f'{feat_name}_features'] = feat_array
-            
+
             npz_file = output_path / f"{model_name}_ml_data.npz"
             np.savez_compressed(npz_file, **arrays_to_save)
             exported_files['ml_data'] = str(npz_file)
-        
+
         return exported_files

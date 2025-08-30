@@ -9,7 +9,7 @@ class Parser:
     Parser for SBML Level 3 models (versions 1 and 2).
     Enhanced parser supporting Level 3 features like conversionFactors and extensions.
     """
-    
+
     def __init__(self, file_path, level=3, version=None):
         self.file_path = file_path
         self.level = level
@@ -20,7 +20,7 @@ class Parser:
     def parse(self):
         """
         Parse SBML Level 3 file and extract ODE model components.
-        
+
         Returns:
             dict: Parsed model data with species, reactions, parameters, compartments
         """
@@ -28,12 +28,12 @@ class Parser:
             reader = SBMLReader()
             self.document = reader.readSBML(self.file_path)
             self.model = self.document.getModel()
-            
+
             if self.model is None:
                 raise SBMLParsingError("No model found in SBML file")
-                
+
             logger.info(f"Parsing SBML Level 3 Version {self.version or 'unknown'} file: {self.file_path}")
-            
+
             parsed_data = {
                 'sbml_info': self._get_sbml_info(),
                 'species': self._parse_species(),
@@ -47,9 +47,9 @@ class Parser:
                 'unit_definitions': self._parse_unit_definitions(),
                 'function_definitions': self._parse_function_definitions()
             }
-            
+
             return parsed_data
-            
+
         except Exception as e:
             if isinstance(e, SBMLParsingError):
                 raise
@@ -81,7 +81,7 @@ class Parser:
     def _parse_species(self):
         """Parse species information with Level 3 enhancements."""
         species_list = []
-        
+
         for i in range(self.model.getNumSpecies()):
             species = self.model.getSpecies(i)
             species_data = {
@@ -100,16 +100,16 @@ class Parser:
                 'metaid': species.getMetaId() if species.isSetMetaId() else None
             }
             species_list.append(species_data)
-            
+
         return species_list
 
     def _parse_reactions(self):
         """Parse reactions with Level 3 features."""
         reactions_list = []
-        
+
         for i in range(self.model.getNumReactions()):
             reaction = self.model.getReaction(i)
-            
+
             # Parse reactants
             reactants = []
             for j in range(reaction.getNumReactants()):
@@ -119,8 +119,8 @@ class Parser:
                     'stoichiometry': reactant.getStoichiometry(),
                     'constant': reactant.getConstant()
                 })
-            
-            # Parse products  
+
+            # Parse products
             products = []
             for j in range(reaction.getNumProducts()):
                 product = reaction.getProduct(j)
@@ -129,7 +129,7 @@ class Parser:
                     'stoichiometry': product.getStoichiometry(),
                     'constant': product.getConstant()
                 })
-            
+
             # Parse modifiers
             modifiers = []
             for j in range(reaction.getNumModifiers()):
@@ -137,7 +137,7 @@ class Parser:
                 modifiers.append({
                     'species': modifier.getSpecies()
                 })
-            
+
             # Parse kinetic law
             kinetic_law = None
             if reaction.isSetKineticLaw():
@@ -147,7 +147,7 @@ class Parser:
                     'math': formulaToString(kl.getMath()) if kl.isSetMath() else None,
                     'parameters': self._parse_local_parameters(kl)
                 }
-            
+
             reaction_data = {
                 'id': reaction.getId(),
                 'name': reaction.getName() if reaction.isSetName() else reaction.getId(),
@@ -162,13 +162,13 @@ class Parser:
                 'metaid': reaction.getMetaId() if reaction.isSetMetaId() else None
             }
             reactions_list.append(reaction_data)
-            
+
         return reactions_list
 
     def _parse_parameters(self):
         """Parse global parameters."""
         parameters_list = []
-        
+
         for i in range(self.model.getNumParameters()):
             param = self.model.getParameter(i)
             param_data = {
@@ -182,13 +182,13 @@ class Parser:
                 'metaid': param.getMetaId() if param.isSetMetaId() else None
             }
             parameters_list.append(param_data)
-            
+
         return parameters_list
 
     def _parse_compartments(self):
         """Parse compartment information with Level 3 features."""
         compartments_list = []
-        
+
         for i in range(self.model.getNumCompartments()):
             comp = self.model.getCompartment(i)
             comp_data = {
@@ -203,17 +203,17 @@ class Parser:
                 'metaid': comp.getMetaId() if comp.isSetMetaId() else None
             }
             compartments_list.append(comp_data)
-            
+
         return compartments_list
 
     def _parse_rules(self):
         """Parse assignment, rate, and algebraic rules."""
         rules_list = []
-        
+
         for i in range(self.model.getNumRules()):
             rule = self.model.getRule(i)
             rule_type = rule.getTypeCode()
-            
+
             rule_data = {
                 'type': self._get_rule_type_name(rule_type),
                 'variable': rule.getVariable() if hasattr(rule, 'getVariable') else None,
@@ -224,13 +224,13 @@ class Parser:
                 'metaid': rule.getMetaId() if rule.isSetMetaId() else None
             }
             rules_list.append(rule_data)
-            
+
         return rules_list
 
     def _parse_initial_assignments(self):
         """Parse initial assignments."""
         assignments_list = []
-        
+
         for i in range(self.model.getNumInitialAssignments()):
             assignment = self.model.getInitialAssignment(i)
             assign_data = {
@@ -242,17 +242,17 @@ class Parser:
                 'metaid': assignment.getMetaId() if assignment.isSetMetaId() else None
             }
             assignments_list.append(assign_data)
-                
+
         return assignments_list
 
     def _parse_events(self):
         """Parse events (Level 2 Version 2+, Level 3)."""
         events_list = []
-        
+
         if hasattr(self.model, 'getNumEvents'):
             for i in range(self.model.getNumEvents()):
                 event = self.model.getEvent(i)
-                
+
                 # Parse trigger
                 trigger_data = None
                 if event.isSetTrigger():
@@ -263,7 +263,7 @@ class Parser:
                         'initial_value': trigger.getInitialValue() if hasattr(trigger, 'getInitialValue') else None,
                         'persistent': trigger.getPersistent() if hasattr(trigger, 'getPersistent') else None
                     }
-                
+
                 # Parse delay
                 delay_data = None
                 if event.isSetDelay():
@@ -272,7 +272,7 @@ class Parser:
                         'formula': delay.getFormula() if delay.isSetFormula() else None,
                         'math': formulaToString(delay.getMath()) if delay.isSetMath() else None
                     }
-                
+
                 # Parse event assignments
                 assignments = []
                 for j in range(event.getNumEventAssignments()):
@@ -282,7 +282,7 @@ class Parser:
                         'formula': ea.getFormula() if ea.isSetFormula() else None,
                         'math': formulaToString(ea.getMath()) if ea.isSetMath() else None
                     })
-                
+
                 event_data = {
                     'id': event.getId() if event.isSetId() else None,
                     'name': event.getName() if event.isSetName() else None,
@@ -294,13 +294,13 @@ class Parser:
                     'sbo_term': event.getSBOTermID() if event.isSetSBOTerm() else None
                 }
                 events_list.append(event_data)
-                
+
         return events_list
 
     def _parse_constraints(self):
         """Parse constraints (Level 2 Version 2+, Level 3)."""
         constraints_list = []
-        
+
         if hasattr(self.model, 'getNumConstraints'):
             for i in range(self.model.getNumConstraints()):
                 constraint = self.model.getConstraint(i)
@@ -312,16 +312,16 @@ class Parser:
                     'sbo_term': constraint.getSBOTermID() if constraint.isSetSBOTerm() else None
                 }
                 constraints_list.append(constraint_data)
-                
+
         return constraints_list
 
     def _parse_unit_definitions(self):
         """Parse unit definitions."""
         unit_defs = []
-        
+
         for i in range(self.model.getNumUnitDefinitions()):
             unit_def = self.model.getUnitDefinition(i)
-            
+
             units = []
             for j in range(unit_def.getNumUnits()):
                 unit = unit_def.getUnit(j)
@@ -331,7 +331,7 @@ class Parser:
                     'scale': unit.getScale(),
                     'multiplier': unit.getMultiplier()
                 })
-            
+
             unit_def_data = {
                 'id': unit_def.getId(),
                 'name': unit_def.getName() if unit_def.isSetName() else unit_def.getId(),
@@ -340,13 +340,13 @@ class Parser:
                 'sbo_term': unit_def.getSBOTermID() if unit_def.isSetSBOTerm() else None
             }
             unit_defs.append(unit_def_data)
-            
+
         return unit_defs
 
     def _parse_function_definitions(self):
         """Parse function definitions."""
         function_defs = []
-        
+
         for i in range(self.model.getNumFunctionDefinitions()):
             func_def = self.model.getFunctionDefinition(i)
             func_data = {
@@ -358,13 +358,13 @@ class Parser:
                 'sbo_term': func_def.getSBOTermID() if func_def.isSetSBOTerm() else None
             }
             function_defs.append(func_data)
-            
+
         return function_defs
 
     def _parse_local_parameters(self, kinetic_law):
         """Parse local parameters within kinetic laws."""
         local_params = []
-        
+
         for i in range(kinetic_law.getNumLocalParameters()):
             param = kinetic_law.getLocalParameter(i)
             param_data = {
@@ -376,20 +376,53 @@ class Parser:
                 'sbo_term': param.getSBOTermID() if param.isSetSBOTerm() else None
             }
             local_params.append(param_data)
-            
+
         return local_params
 
     def _get_notes(self, element):
         """Extract notes/annotations from SBML element."""
         if element.isSetNotes():
-            return element.getNotesString()
+            notes_xml = element.getNotesString()
+            return self._clean_notes_text(notes_xml)
         return None
+
+    def _clean_notes_text(self, notes_xml):
+        """Extract clean text from SBML notes XML."""
+        if not notes_xml:
+            return None
+
+        try:
+            import re
+            from html import unescape
+
+            # Remove XML/HTML tags
+            clean_text = re.sub(r'<[^>]+>', ' ', notes_xml)
+
+            # Decode HTML entities
+            clean_text = unescape(clean_text)
+
+            # Clean up whitespace
+            clean_text = ' '.join(clean_text.split())
+
+            # Remove common SBML boilerplate
+            clean_text = re.sub(r'This model is hosted on.*?BioModels Database.*?\.', '', clean_text, flags=re.DOTALL)
+            clean_text = re.sub(r'To cite BioModels Database.*?models\.', '', clean_text, flags=re.DOTALL)
+            clean_text = re.sub(r'To the extent possible under law.*?Dedication.*?\.', '', clean_text, flags=re.DOTALL)
+
+            # Clean up extra whitespace again
+            clean_text = ' '.join(clean_text.split())
+
+            return clean_text.strip() if clean_text.strip() else None
+
+        except Exception:
+            # Fallback to original if cleaning fails
+            return notes_xml
 
     def _get_rule_type_name(self, type_code):
         """Convert rule type code to readable name."""
         type_names = {
-            1: 'assignment',  # SBML_ASSIGNMENT_RULE
-            2: 'rate',        # SBML_RATE_RULE  
-            3: 'algebraic'    # SBML_ALGEBRAIC_RULE
+            21: 'algebraic',   # SBML_ALGEBRAIC_RULE
+            22: 'assignment',  # SBML_ASSIGNMENT_RULE
+            23: 'rate'         # SBML_RATE_RULE
         }
         return type_names.get(type_code, 'unknown')

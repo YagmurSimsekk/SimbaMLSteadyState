@@ -1,7 +1,7 @@
 Acknowledgements
 ================
 
-Thanks to 
+Thanks to
 
 - Katharina Baum
 - Pascal Iversen

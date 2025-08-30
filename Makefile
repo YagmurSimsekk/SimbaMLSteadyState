@@ -18,7 +18,7 @@ lint: simba_ml
 	pycodestyle --max-line-length=88 --ignore E203,W503 --select W504 simba_ml
 	pylint simba_ml
 	pydocstyle --convention=google simba_ml
-	sourcery review simba_ml --check 
+	sourcery review simba_ml --check
 	mypy --pretty simba_ml/ --disable-error-code import --disable-error-code no-any-return --strict
 	find simba_ml ! -iwholename "simba_ml\/\_version\.py" -name "*.py" | xargs darglint -v 2
 	black simba_ml --check --exclude _version.py

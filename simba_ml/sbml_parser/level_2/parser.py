@@ -9,7 +9,7 @@ class Parser:
     Parser for SBML Level 2 models (versions 4 and 5).
     Focuses on ODE model extraction and conversion.
     """
-    
+
     def __init__(self, file_path, level=2, version=None):
         self.file_path = file_path
         self.level = level
@@ -20,7 +20,7 @@ class Parser:
     def parse(self):
         """
         Parse SBML Level 2 file and extract ODE model components.
-        
+
         Returns:
             dict: Parsed model data with species, reactions, parameters, compartments
         """
@@ -28,12 +28,12 @@ class Parser:
             reader = SBMLReader()
             self.document = reader.readSBML(self.file_path)
             self.model = self.document.getModel()
-            
+
             if self.model is None:
                 raise SBMLParsingError("No model found in SBML file")
-                
+
             logger.info(f"Parsing SBML Level 2 Version {self.version or 'unknown'} file: {self.file_path}")
-            
+
             parsed_data = {
                 'sbml_info': self._get_sbml_info(),
                 'species': self._parse_species(),
@@ -43,9 +43,9 @@ class Parser:
                 'rules': self._parse_rules(),
                 'initial_assignments': self._parse_initial_assignments()
             }
-            
+
             return parsed_data
-            
+
         except Exception as e:
             if isinstance(e, SBMLParsingError):
                 raise
@@ -68,7 +68,7 @@ class Parser:
     def _parse_species(self):
         """Parse species information for ODE variables."""
         species_list = []
-        
+
         for i in range(self.model.getNumSpecies()):
             species = self.model.getSpecies(i)
             species_data = {
@@ -85,16 +85,16 @@ class Parser:
                 'sbo_term': species.getSBOTermID() if species.isSetSBOTerm() else None
             }
             species_list.append(species_data)
-            
+
         return species_list
 
     def _parse_reactions(self):
         """Parse reactions and kinetic laws for ODE system."""
         reactions_list = []
-        
+
         for i in range(self.model.getNumReactions()):
             reaction = self.model.getReaction(i)
-            
+
             # Parse reactants
             reactants = []
             for j in range(reaction.getNumReactants()):
@@ -104,8 +104,8 @@ class Parser:
                     'stoichiometry': reactant.getStoichiometry(),
                     'constant': reactant.getConstant() if hasattr(reactant, 'getConstant') else True
                 })
-            
-            # Parse products  
+
+            # Parse products
             products = []
             for j in range(reaction.getNumProducts()):
                 product = reaction.getProduct(j)
@@ -114,7 +114,7 @@ class Parser:
                     'stoichiometry': product.getStoichiometry(),
                     'constant': product.getConstant() if hasattr(product, 'getConstant') else True
                 })
-            
+
             # Parse modifiers
             modifiers = []
             for j in range(reaction.getNumModifiers()):
@@ -122,7 +122,7 @@ class Parser:
                 modifiers.append({
                     'species': modifier.getSpecies()
                 })
-            
+
             # Parse kinetic law
             kinetic_law = None
             if reaction.isSetKineticLaw():
@@ -134,7 +134,7 @@ class Parser:
                     'substance_units': kl.getSubstanceUnits() if kl.isSetSubstanceUnits() else None,
                     'time_units': kl.getTimeUnits() if kl.isSetTimeUnits() else None
                 }
-            
+
             reaction_data = {
                 'id': reaction.getId(),
                 'name': reaction.getName() if reaction.isSetName() else reaction.getId(),
@@ -148,13 +148,13 @@ class Parser:
                 'sbo_term': reaction.getSBOTermID() if reaction.isSetSBOTerm() else None
             }
             reactions_list.append(reaction_data)
-            
+
         return reactions_list
 
     def _parse_parameters(self):
         """Parse global parameters."""
         parameters_list = []
-        
+
         for i in range(self.model.getNumParameters()):
             param = self.model.getParameter(i)
             param_data = {
@@ -167,13 +167,13 @@ class Parser:
                 'sbo_term': param.getSBOTermID() if param.isSetSBOTerm() else None
             }
             parameters_list.append(param_data)
-            
+
         return parameters_list
 
     def _parse_compartments(self):
         """Parse compartment information."""
         compartments_list = []
-        
+
         for i in range(self.model.getNumCompartments()):
             comp = self.model.getCompartment(i)
             comp_data = {
@@ -187,17 +187,17 @@ class Parser:
                 'sbo_term': comp.getSBOTermID() if comp.isSetSBOTerm() else None
             }
             compartments_list.append(comp_data)
-            
+
         return compartments_list
 
     def _parse_rules(self):
         """Parse assignment, rate, and algebraic rules."""
         rules_list = []
-        
+
         for i in range(self.model.getNumRules()):
             rule = self.model.getRule(i)
             rule_type = rule.getTypeCode()
-            
+
             rule_data = {
                 'type': self._get_rule_type_name(rule_type),
                 'variable': rule.getVariable() if hasattr(rule, 'getVariable') else None,
@@ -207,13 +207,13 @@ class Parser:
                 'sbo_term': rule.getSBOTermID() if rule.isSetSBOTerm() else None
             }
             rules_list.append(rule_data)
-            
+
         return rules_list
 
     def _parse_initial_assignments(self):
         """Parse initial assignments (Level 2 Version 2+)."""
         assignments_list = []
-        
+
         if hasattr(self.model, 'getNumInitialAssignments'):
             for i in range(self.model.getNumInitialAssignments()):
                 assignment = self.model.getInitialAssignment(i)
@@ -225,13 +225,13 @@ class Parser:
                     'sbo_term': assignment.getSBOTermID() if assignment.isSetSBOTerm() else None
                 }
                 assignments_list.append(assign_data)
-                
+
         return assignments_list
 
     def _parse_local_parameters(self, kinetic_law):
         """Parse local parameters within kinetic laws."""
         local_params = []
-        
+
         for i in range(kinetic_law.getNumParameters()):
             param = kinetic_law.getParameter(i)
             param_data = {
@@ -243,20 +243,53 @@ class Parser:
                 'sbo_term': param.getSBOTermID() if param.isSetSBOTerm() else None
             }
             local_params.append(param_data)
-            
+
         return local_params
 
     def _get_notes(self, element):
         """Extract notes/annotations from SBML element."""
         if element.isSetNotes():
-            return element.getNotesString()
+            notes_xml = element.getNotesString()
+            return self._clean_notes_text(notes_xml)
         return None
+
+    def _clean_notes_text(self, notes_xml):
+        """Extract clean text from SBML notes XML."""
+        if not notes_xml:
+            return None
+
+        try:
+            import re
+            from html import unescape
+
+            # Remove XML/HTML tags
+            clean_text = re.sub(r'<[^>]+>', ' ', notes_xml)
+
+            # Decode HTML entities
+            clean_text = unescape(clean_text)
+
+            # Clean up whitespace
+            clean_text = ' '.join(clean_text.split())
+
+            # Remove common SBML boilerplate
+            clean_text = re.sub(r'This model is hosted on.*?BioModels Database.*?\.', '', clean_text, flags=re.DOTALL)
+            clean_text = re.sub(r'To cite BioModels Database.*?models\.', '', clean_text, flags=re.DOTALL)
+            clean_text = re.sub(r'To the extent possible under law.*?Dedication.*?\.', '', clean_text, flags=re.DOTALL)
+
+            # Clean up extra whitespace again
+            clean_text = ' '.join(clean_text.split())
+
+            return clean_text.strip() if clean_text.strip() else None
+
+        except Exception:
+            # Fallback to original if cleaning fails
+            return notes_xml
 
     def _get_rule_type_name(self, type_code):
         """Convert rule type code to readable name."""
         type_names = {
-            1: 'assignment',  # SBML_ASSIGNMENT_RULE
-            2: 'rate',        # SBML_RATE_RULE  
-            3: 'algebraic'    # SBML_ALGEBRAIC_RULE
+            21: 'algebraic',   # SBML_ALGEBRAIC_RULE
+            22: 'assignment',  # SBML_ASSIGNMENT_RULE
+            23: 'rate'         # SBML_RATE_RULE
         }
         return type_names.get(type_code, 'unknown')

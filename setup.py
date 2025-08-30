@@ -35,6 +35,10 @@ setup(
         "dacite",
         "tomli",
         "wandb",
+        "click",
+        "requests",
+        "python-libsbml",
+        "joblib",
     ],
     keywords=[
         "python",
@@ -49,6 +53,7 @@ setup(
     entry_points={
         "console_scripts": [
             "simba_ml = simba_ml.cli.__main__:main",
+            "simba-ml = simba_ml.cli.main:main",
         ],
     },
     license_files=("LICENSE.txt",),

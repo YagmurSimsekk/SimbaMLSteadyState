@@ -34,5 +34,3 @@ input_length = 1
 output_length = 1
 input_features = ["Infected", "Recovered"]
 output_features = ["Infected", "Recovered"]
-
-

@@ -4,7 +4,7 @@ Reference
 When using SimbaML in a scientific publication, please include the following references to relevant papers.
 
 ..  code-block:: latex
-    
+
     @inproceedings{DBLP:conf/iclr/KleisslDHZIWRB23,
         author       = {Maximilian Kleissl and
                         Lukas Drews and

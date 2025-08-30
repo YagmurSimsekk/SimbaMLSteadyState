@@ -24,7 +24,7 @@ Pipelines
 
 .. toctree::
     :maxdepth: 2
-    
+
     Time-Series-Prediction/Pipelines/index
 
 Steady State Prediction

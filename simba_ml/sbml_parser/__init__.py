@@ -6,11 +6,11 @@ Supports commonly used SBML levels and versions for ODE modeling.
 """
 
 from .main_parser import MainSBMLParser, SBMLParsingError, UnsupportedSBMLVersionError
-from .ml_exporter import SBMLMLExporter
+from .ml_exporter import SBMLExporter
 
 __all__ = [
     'MainSBMLParser',
-    'SBMLMLExporter',
+    'SBMLExporter',
     'SBMLParsingError',
     'UnsupportedSBMLVersionError'
 ]

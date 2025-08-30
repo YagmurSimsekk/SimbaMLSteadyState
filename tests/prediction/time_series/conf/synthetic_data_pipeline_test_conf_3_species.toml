@@ -45,5 +45,3 @@ input_features = ["8", "10", "21"]
 output_features = ["8", "10", "21"]
 input_length = 2
 output_length = 2
-
-
