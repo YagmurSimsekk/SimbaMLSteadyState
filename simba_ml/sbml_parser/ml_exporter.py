@@ -1,16 +1,15 @@
 """
 Data Exporter for SBML models.
 
-Converts parsed SBML data into numerical solver ready formats including:
-- Structured DataFrames for species, reactions, parameters
-- Network matrices (stoichiometry, adjacency)
-- Feature vectors for ML training
-- Export to various formats (CSV, JSON, NumPy, etc.)
+Converts parsed SBML data into steady-state simulation ready formats including:
+- Basic species, reactions, parameters access
+- Stoichiometry matrix for reaction network analysis
+- ODE readiness validation
+- Units handling for proper numerical simulation
 """
 
 import pandas as pd
 import numpy as np
-import json
 import libsbml
 from typing import Dict, List, Tuple, Optional, Any
 from pathlib import Path
@@ -203,7 +202,8 @@ class SBMLExporter:
         has_kinetic_laws = any(rxn.get('kinetic_law') is not None for rxn in self.reactions)
 
         # Check for rate rules
-        has_rate_rules = any(rule.get('type') == 'rate' for rule in getattr(self, 'rules', []))
+        rules = self.data.get('rules', [])
+        has_rate_rules = any(rule.get('type') == 'rate' for rule in rules)
 
         return has_kinetic_laws or has_rate_rules
 
@@ -286,94 +286,6 @@ class SBMLExporter:
             })
         return boundary_info
 
-    def to_dataframes(self) -> Dict[str, pd.DataFrame]:
-        """
-        Convert parsed data to pandas DataFrames.
-
-        Returns:
-            dict: DataFrames for different components
-        """
-        dataframes = {}
-
-        # Species DataFrame
-        if self.species:
-            species_data = []
-            for sp in self.species:
-                species_data.append({
-                    'species_id': sp['id'],
-                    'name': sp['name'],
-                    'compartment': sp['compartment'],
-                    'initial_concentration': sp.get('initial_concentration'),
-                    'initial_amount': sp.get('initial_amount'),
-                    'normalized_concentration': sp.get('normalized_concentration'),
-                    'units_type': sp.get('units_type'),
-                    'substance_unit': sp.get('substance_unit'),
-                    'substance_multiplier': sp.get('substance_multiplier'),
-                    'time_unit': sp.get('time_unit'),
-                    'time_multiplier': sp.get('time_multiplier'),
-                    'volume_unit': sp.get('volume_unit'),
-                    'boundary_condition': sp.get('boundary_condition', False),
-                    'constant': sp.get('constant', False),
-                    'has_only_substance_units': sp.get('has_only_substance_units', False),
-                    'is_dynamic': not (sp.get('boundary_condition', False) or sp.get('constant', False))
-                })
-            dataframes['species'] = pd.DataFrame(species_data)
-
-        # Reactions DataFrame
-        if self.reactions:
-            reaction_data = []
-            for rxn in self.reactions:
-                # Basic reaction info
-                rxn_row = {
-                    'reaction_id': rxn['id'],
-                    'name': rxn['name'],
-                    'reversible': rxn.get('reversible', False),
-                    'fast': rxn.get('fast', False),
-                    'has_kinetic_law': rxn.get('kinetic_law') is not None,
-                    'num_reactants': len(rxn.get('reactants', [])),
-                    'num_products': len(rxn.get('products', [])),
-                    'num_modifiers': len(rxn.get('modifiers', []))
-                }
-
-                # Add kinetic law info if available
-                if rxn.get('kinetic_law'):
-                    kl = rxn['kinetic_law']
-                    rxn_row.update({
-                        'kinetic_formula': kl.get('formula'),
-                        'kinetic_math': kl.get('math'),
-                        'num_local_parameters': len(kl.get('parameters', []))
-                    })
-
-                reaction_data.append(rxn_row)
-            dataframes['reactions'] = pd.DataFrame(reaction_data)
-
-        # Parameters DataFrame
-        if self.parameters:
-            param_data = []
-            for param in self.parameters:
-                param_data.append({
-                    'parameter_id': param['id'],
-                    'name': param['name'],
-                    'value': param.get('value'),
-                    'units': param.get('units'),
-                    'constant': param.get('constant', True)
-                })
-            dataframes['parameters'] = pd.DataFrame(param_data)
-
-        # Compartments DataFrame
-        if self.compartments:
-            comp_data = []
-            for comp in self.compartments:
-                comp_data.append({
-                    'compartment_id': comp['id'],
-                    'name': comp['name'],
-                    'size': comp.get('size'),
-                    'spatial_dimensions': comp.get('spatial_dimensions'),
-                    'constant': comp.get('constant', True)
-                })
-            dataframes['compartments'] = pd.DataFrame(comp_data)
-
-        return dataframes
 
     def get_stoichiometry_matrix(self, dynamic_only: bool = True) -> Tuple[np.ndarray, List[str], List[str]]:
         """
@@ -462,67 +374,13 @@ class SBMLExporter:
 
         return A, species_ids
 
-    def get_feature_vectors(self) -> Dict[str, np.ndarray]:
-        """
-        Extract feature vectors for ML training.
-
-        Returns:
-            dict: Feature vectors for different components
-        """
-        features = {}
-
-        # Species features
-        if self.species:
-            species_features = []
-            for sp in self.species:
-                feat = [
-                    float(sp.get('initial_concentration') or sp.get('initial_amount') or 0),
-                    float(sp.get('boundary_condition', False)),
-                    float(sp.get('constant', False)),
-                    float(sp.get('has_only_substance_units', False))
-                ]
-                species_features.append(feat)
-            features['species'] = np.array(species_features)
-
-        # Reaction features
-        if self.reactions:
-            reaction_features = []
-            for rxn in self.reactions:
-                feat = [
-                    float(rxn.get('reversible', False)),
-                    float(rxn.get('fast', False)),
-                    float(rxn.get('kinetic_law') is not None),
-                    float(len(rxn.get('reactants', []))),
-                    float(len(rxn.get('products', []))),
-                    float(len(rxn.get('modifiers', [])))
-                ]
-                reaction_features.append(feat)
-            features['reactions'] = np.array(reaction_features)
-
-        # Network topology features
-        if self.species and self.reactions:
-            S, _, _ = self.get_stoichiometry_matrix()
-            A, _ = self.get_adjacency_matrix()
-
-            # Network-level features
-            network_features = [
-                len(self.species),  # Number of species
-                len(self.reactions),  # Number of reactions
-                np.count_nonzero(S),  # Number of non-zero stoichiometry entries
-                np.count_nonzero(A),  # Number of edges in adjacency graph
-                np.mean(np.sum(np.abs(S), axis=1)),  # Average species degree
-                np.mean(np.sum(A, axis=1)),  # Average adjacency degree
-            ]
-            features['network'] = np.array(network_features)
-
-        return features
 
     def get_ml_dataset(self) -> Dict[str, Any]:
         """
-        Get comprehensive dataset.
+        Get basic dataset for steady-state workflows.
 
         Returns:
-            dict: Complete dataset with matrices, features, and metadata
+            dict: Dataset with matrices and metadata
         """
         dataset = {
             'metadata': {
@@ -534,7 +392,7 @@ class SBMLExporter:
                 'num_reactions': len(self.reactions),
                 'num_parameters': len(self.parameters),
                 'has_kinetic_laws': any(r.get('kinetic_law') for r in self.reactions),
-                'has_rate_rules': any(rule.get('type') == 'rate' for rule in getattr(self, 'rules', [])),
+                'has_rate_rules': any(rule.get('type') == 'rate' for rule in self.data.get('rules', [])),
                 'ode_ready': self._model_is_ode_ready()
             }
         }
@@ -551,99 +409,44 @@ class SBMLExporter:
                 'reaction_ids': reaction_ids
             }
 
-        # Add feature vectors
-        dataset['features'] = self.get_feature_vectors()
-
-        # Add DataFrames
-        dataset['dataframes'] = self.to_dataframes()
 
         return dataset
 
     def export_to_files(self, output_dir: str, format: str = 'csv') -> Dict[str, str]:
         """
-        Export data to files for ML workflows.
+        Export matrices to CSV files for steady-state workflows.
 
         Args:
             output_dir: Directory to save files
-            format: Export format ('csv', 'json', 'npz', 'pickle')
+            format: Only 'csv' format is supported
 
         Returns:
             dict: Mapping of data type to file path
         """
+        if format != 'csv':
+            raise ValueError("Only CSV format is supported for steady-state workflows")
+
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
         model_name = self.sbml_info.get('model_id', 'sbml_model')
         exported_files = {}
 
-        if format == 'csv':
-            # Export DataFrames as CSV
-            dataframes = self.to_dataframes()
-            for name, df in dataframes.items():
-                file_path = output_path / f"{model_name}_{name}.csv"
-                df.to_csv(file_path, index=False)
-                exported_files[name] = str(file_path)
+        # Export matrices as CSV
+        if self.species and self.reactions:
+            S, species_ids, reaction_ids = self.get_stoichiometry_matrix()
+            A, _ = self.get_adjacency_matrix()
 
-            # Export matrices as CSV
-            if self.species and self.reactions:
-                S, species_ids, reaction_ids = self.get_stoichiometry_matrix()
-                A, _ = self.get_adjacency_matrix()
+            # Stoichiometry matrix with labels
+            S_df = pd.DataFrame(S, index=species_ids, columns=reaction_ids)
+            S_file = output_path / f"{model_name}_stoichiometry.csv"
+            S_df.to_csv(S_file)
+            exported_files['stoichiometry'] = str(S_file)
 
-                # Stoichiometry matrix with labels
-                S_df = pd.DataFrame(S, index=species_ids, columns=reaction_ids)
-                S_file = output_path / f"{model_name}_stoichiometry.csv"
-                S_df.to_csv(S_file)
-                exported_files['stoichiometry'] = str(S_file)
-
-                # Adjacency matrix with labels
-                A_df = pd.DataFrame(A, index=species_ids, columns=species_ids)
-                A_file = output_path / f"{model_name}_adjacency.csv"
-                A_df.to_csv(A_file)
-                exported_files['adjacency'] = str(A_file)
-
-        elif format == 'json':
-            # Export as JSON
-            ml_dataset = self.get_ml_dataset()
-            # Convert numpy arrays to lists for JSON serialization
-            def convert_numpy(obj):
-                if isinstance(obj, np.ndarray):
-                    return obj.tolist()
-                elif isinstance(obj, pd.DataFrame):
-                    return obj.to_dict('records')
-                return obj
-
-            json_data = {}
-            for key, value in ml_dataset.items():
-                if key == 'dataframes':
-                    json_data[key] = {k: v.to_dict('records') for k, v in value.items()}
-                elif key == 'matrices':
-                    json_data[key] = {k: convert_numpy(v) for k, v in value.items()}
-                elif key == 'features':
-                    json_data[key] = {k: convert_numpy(v) for k, v in value.items()}
-                else:
-                    json_data[key] = value
-
-            json_file = output_path / f"{model_name}_ml_data.json"
-            with open(json_file, 'w') as f:
-                json.dump(json_data, f, indent=2)
-            exported_files['ml_data'] = str(json_file)
-
-        elif format == 'npz':
-            # Export as NumPy compressed format
-            ml_dataset = self.get_ml_dataset()
-            arrays_to_save = {}
-
-            # Flatten all numpy arrays with descriptive names
-            if 'matrices' in ml_dataset:
-                arrays_to_save['stoichiometry_matrix'] = ml_dataset['matrices']['stoichiometry']
-                arrays_to_save['adjacency_matrix'] = ml_dataset['matrices']['adjacency']
-
-            if 'features' in ml_dataset:
-                for feat_name, feat_array in ml_dataset['features'].items():
-                    arrays_to_save[f'{feat_name}_features'] = feat_array
-
-            npz_file = output_path / f"{model_name}_ml_data.npz"
-            np.savez_compressed(npz_file, **arrays_to_save)
-            exported_files['ml_data'] = str(npz_file)
+            # Adjacency matrix with labels
+            A_df = pd.DataFrame(A, index=species_ids, columns=species_ids)
+            A_file = output_path / f"{model_name}_adjacency.csv"
+            A_df.to_csv(A_file)
+            exported_files['adjacency'] = str(A_file)
 
         return exported_files
