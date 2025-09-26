@@ -55,15 +55,19 @@ class SteadyStateGenerator:
     def __add_parameters_to_table(
         self, start_values: dict[str, typing.Any], signals_df: pd.DataFrame
     ) -> pd.DataFrame:
-        for i in range(len(start_values["timestamps"])):
-            for name, kinetic_parameter in self.sm.kinetic_parameters.items():
-                signals_df[
-                    "kinetic_parameter_" + name
-                ] = kinetic_parameter.get_at_timestamp(i, 0)
-            for species in self.sm.specieses.values():
-                signals_df[species.name + "_start_value"] = float(
-                    start_values["specieses"][species.name][i]
-                )
+        # Add kinetic parameter columns for each sample
+        for name, kinetic_parameter in self.sm.kinetic_parameters.items():
+            param_values = []
+            for i in range(len(start_values["timestamps"])):
+                param_values.append(kinetic_parameter.get_at_timestamp(i, 0))
+            signals_df["kinetic_parameter_" + name] = param_values
+
+        # Add initial value columns for each sample
+        for species in self.sm.specieses.values():
+            start_values_list = []
+            for i in range(len(start_values["timestamps"])):
+                start_values_list.append(float(start_values["specieses"][species.name][i]))
+            signals_df[species.name + "_start_value"] = start_values_list
         for species_name, species in self.sm.specieses.items():
             if not species.contained_in_output:
                 signals_df.drop(columns=[species_name], inplace=True)
