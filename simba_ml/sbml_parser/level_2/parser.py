@@ -41,7 +41,8 @@ class Parser:
                 'parameters': self._parse_parameters(),
                 'compartments': self._parse_compartments(),
                 'rules': self._parse_rules(),
-                'initial_assignments': self._parse_initial_assignments()
+                'initial_assignments': self._parse_initial_assignments(),
+                'function_definitions': self._parse_function_definitions()
             }
 
             return parsed_data
@@ -293,3 +294,21 @@ class Parser:
             23: 'rate'         # SBML_RATE_RULE
         }
         return type_names.get(type_code, 'unknown')
+
+    def _parse_function_definitions(self):
+        """Parse function definitions."""
+        function_defs = []
+
+        for i in range(self.model.getNumFunctionDefinitions()):
+            func_def = self.model.getFunctionDefinition(i)
+            func_data = {
+                'id': func_def.getId(),
+                'name': func_def.getName() if func_def.isSetName() else func_def.getId(),
+                'formula': formulaToString(func_def.getMath()) if func_def.isSetMath() else None,
+                'math': formulaToString(func_def.getMath()) if func_def.isSetMath() else None,
+                'notes': self._get_notes(func_def),
+                'sbo_term': func_def.getSBOTermID() if func_def.isSetSBOTerm() else None
+            }
+            function_defs.append(func_data)
+
+        return function_defs

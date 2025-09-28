@@ -163,27 +163,8 @@ class SBMLSystemModel(system_model.SystemModel):
                 distribution=distribution
             )
 
-        # Local parameters from kinetic laws
-        for reaction in self.sbml_data['reactions']:
-            if reaction.get('kinetic_law') and reaction['kinetic_law'].get('parameters'):
-                for local_param in reaction['kinetic_law']['parameters']:
-                    param_id = f"{reaction['id']}_{local_param['id']}"
-                    param_value = local_param.get('value', 1.0)
-
-                    if param_id in custom_distributions:
-                        distribution = custom_distributions[param_id]
-                    else:
-                        if param_value > 0:
-                            distribution = distributions.LogNormalDistribution(
-                                mu=np.log(param_value),
-                                sigma=0.2
-                            )
-                        else:
-                            distribution = distributions.Constant(param_value)
-
-                    params_dict[param_id] = kinetic_parameters_module.ConstantKineticParameter(
-                        distribution=distribution
-                    )
+        # Note: Local parameters are NOT stored globally to avoid conflicts
+        # They are handled individually for each reaction during rate evaluation
 
         return params_dict
 
@@ -239,15 +220,15 @@ class SBMLSystemModel(system_model.SystemModel):
 
                 # Evaluate reaction rate
                 try:
-                    # Prepare local parameters
+                    # Prepare local parameters (now using direct names)
                     local_params = {}
                     if kinetic_law.get('parameters'):
                         for local_param in kinetic_law['parameters']:
-                            local_key = f"{reaction['id']}_{local_param['id']}"
-                            if local_key in kinetic_params:
-                                local_params[local_param['id']] = kinetic_params[local_key]
+                            param_name = local_param['id']
+                            if param_name in kinetic_params:
+                                local_params[param_name] = kinetic_params[param_name]
                             else:
-                                local_params[local_param['id']] = local_param.get('value', 1.0)
+                                local_params[param_name] = local_param.get('value', 1.0)
 
                     rate = self._evaluate_rate_formula(
                         rate_formula,
@@ -324,12 +305,89 @@ class SBMLSystemModel(system_model.SystemModel):
             if param_id not in eval_context:
                 eval_context[param_id] = param_data.get('value', 1.0)
 
+        # Add compartments to evaluation context
+        for comp_data in self.sbml_data.get('compartments', []):
+            comp_id = comp_data['id']
+            if comp_id not in eval_context:
+                eval_context[comp_id] = comp_data.get('size', 1.0)
+
         try:
-            result = self._safe_evaluate_formula(formula, eval_context)
+            # Substitute function calls with their mathematical expressions
+            expanded_formula = self._expand_function_calls(formula)
+            result = self._safe_evaluate_formula(expanded_formula, eval_context)
             return float(result) if result is not None else 0.0
         except Exception as e:
             logger.debug(f"Error evaluating formula '{formula}': {e}")
             return 0.0
+
+    def _expand_function_calls(self, formula: str) -> str:
+        """Expand function calls in a formula to their mathematical expressions."""
+        import re
+
+        # Find function calls like function_1(arg1, arg2, ...)
+        function_pattern = r'(function_\d+)\s*\((.*?)\)'
+
+        def replace_function(match):
+            func_name = match.group(1)
+            args_str = match.group(2)
+
+            # Find the function definition
+            func_def = None
+            for f in self.sbml_data.get('function_definitions', []):
+                if f['id'] == func_name:
+                    func_def = f
+                    break
+
+            if not func_def:
+                logger.warning(f"Function {func_name} not found, returning 1.0")
+                return "1.0"
+
+            func_formula = func_def.get('formula', func_def.get('math', ''))
+            if not func_formula:
+                logger.warning(f"No formula found for function {func_name}, returning 1.0")
+                return "1.0"
+
+            # Parse lambda function: lambda(arg1, arg2, ..., expression)
+            if func_formula.startswith('lambda('):
+                # Extract lambda arguments and body
+                lambda_content = func_formula[7:]  # Remove 'lambda('
+                if lambda_content.endswith(')'):
+                    lambda_content = lambda_content[:-1]  # Remove closing ')'
+
+                # Split arguments from expression (last comma separates them)
+                parts = lambda_content.split(',')
+                if len(parts) < 2:
+                    logger.warning(f"Invalid lambda function {func_name}, returning 1.0")
+                    return "1.0"
+
+                # Arguments are all but the last part
+                lambda_args = [arg.strip() for arg in parts[:-1]]
+                # Expression is the last part
+                expression = parts[-1].strip()
+
+                # Parse the actual arguments passed to the function
+                actual_args = [arg.strip() for arg in args_str.split(',')]
+
+                if len(actual_args) != len(lambda_args):
+                    logger.warning(f"Argument count mismatch for {func_name}: expected {len(lambda_args)}, got {len(actual_args)}")
+                    return "1.0"
+
+                # Substitute arguments in the expression
+                substituted_expr = expression
+                for lambda_arg, actual_arg in zip(lambda_args, actual_args):
+                    # Use word boundaries to avoid partial matches
+                    substituted_expr = re.sub(r'\b' + re.escape(lambda_arg) + r'\b', actual_arg, substituted_expr)
+
+                return f"({substituted_expr})"
+
+            else:
+                logger.warning(f"Non-lambda function {func_name} not supported, returning 1.0")
+                return "1.0"
+
+        # Replace all function calls
+        expanded = re.sub(function_pattern, replace_function, formula)
+
+        return expanded
 
     def _safe_evaluate_formula(self, formula: str, context: dict) -> float:
         try:
