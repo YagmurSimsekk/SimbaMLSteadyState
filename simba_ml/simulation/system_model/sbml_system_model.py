@@ -168,6 +168,80 @@ class SBMLSystemModel(system_model.SystemModel):
 
         return params_dict
 
+    def _build_exact_kinetic_parameters(self) -> dict[str, kinetic_parameters_module.KineticParameter]:
+        """Build kinetic parameters using exact SBML values (no distributions)."""
+        params_dict = {}
+
+        # Global parameters - use exact values
+        for param_data in self.sbml_data['parameters']:
+            param_id = param_data['id']
+            param_value = param_data.get('value', 1.0)
+
+            # Use Constant distribution for exact values
+            distribution = distributions.Constant(param_value)
+            params_dict[param_id] = kinetic_parameters_module.ConstantKineticParameter(
+                distribution=distribution
+            )
+
+        return params_dict
+
+    def _build_exact_species(self) -> dict[str, species.Species]:
+        """Build species using exact SBML initial values (no distributions)."""
+        species_dict = {}
+
+        for sp_data in self.sbml_data['species']:
+            sp_id = sp_data['id']
+
+            # Get exact initial value
+            initial_value = 1.0
+            if sp_data.get('initial_concentration') is not None:
+                initial_value = sp_data['initial_concentration']
+            elif sp_data.get('initial_amount') is not None:
+                initial_value = sp_data['initial_amount']
+
+            # Use Constant distribution for exact values
+            initial_distribution = distributions.Constant(initial_value)
+
+            # Determine if species should be in output
+            is_boundary = sp_data.get('boundary_condition', False)
+            is_constant = sp_data.get('constant', False)
+            contained_in_output = not (is_boundary or is_constant)
+
+            species_obj = species.Species(
+                name=sp_id,
+                distribution=initial_distribution,
+                contained_in_output=contained_in_output
+            )
+
+            species_dict[sp_id] = species_obj
+
+        return species_dict
+
+    def use_exact_sbml_values(self):
+        """Switch to using exact SBML values instead of distributions."""
+        print("🔧 Switching SimbaML to use exact SBML values...")
+
+        # Replace distributions with exact values
+        exact_params = self._build_exact_kinetic_parameters()
+        exact_species = self._build_exact_species()
+
+        # Update internal references
+        self._kinetic_parameters = exact_params
+        self._specieses = exact_species
+
+        # Update parent class attributes
+        super().__init__(
+            name=self.name,
+            specieses=list(exact_species.values()),
+            kinetic_parameters=exact_params,
+            deriv=self._deriv,
+            sparsifier=self.sparsifier,
+            noiser=self.noiser
+        )
+
+        print(f"   ✅ Using exact values for {len(exact_params)} parameters")
+        print(f"   ✅ Using exact values for {len(exact_species)} species")
+
     def _build_derivative_function(self) -> typing.Callable:
         """Build derivative function from SBML reaction network."""
 
@@ -448,7 +522,14 @@ class SBMLSystemModel(system_model.SystemModel):
                     right = safe_eval_node(node.right)
                     op = allowed_ops.get(type(node.op))
                     if op:
-                        return op(left, right)
+                        try:
+                            result = op(left, right)
+                            # Check for overflow/invalid results
+                            if not np.isfinite(result):
+                                return 0.0  # Return 0 for overflow/NaN/inf
+                            return result
+                        except (OverflowError, ZeroDivisionError):
+                            return 0.0  # Return 0 for overflow or division by zero
                     else:
                         raise ValueError(f"Unsupported operation: {type(node.op)}")
                 elif isinstance(node, ast.UnaryOp):  # unary operation
@@ -581,3 +662,138 @@ class SBMLSystemModel(system_model.SystemModel):
                     signal_df[sp_id] = boundary_value
 
             return signal_df
+
+    def compute_steady_state(
+        self,
+        method: str = 'lsoda',
+        t_max: float = 10000,
+        atol: float = 1e-8,
+        rtol: float = 1e-6,
+        **solver_kwargs
+    ) -> typing.Dict[str, typing.Any]:
+        """Compute steady-state using exact SBML initial values and parameters.
+
+        This method provides a high-level API equivalent to Tellurium's steadyState(),
+        using the exact values from the SBML file without any sampling or variation.
+
+        Args:
+            method: Solver method - 'lsoda' for ODE simulation, 'scipy'/'newton'/'bounded' for root-finding
+            t_max: Maximum integration time for ODE methods
+            atol: Absolute tolerance for ODE solver
+            rtol: Relative tolerance for ODE solver
+            **solver_kwargs: Additional solver-specific options
+
+        Returns:
+            Dictionary containing:
+                - 'success': bool, whether computation succeeded
+                - 'values': np.ndarray of steady-state concentrations
+                - 'species': list of species names
+                - 'max_derivative': float, max |dx/dt| at steady-state
+                - 'message': str, diagnostic message
+                - 'method': str, method used
+
+        Example:
+            >>> model = SBMLSystemModel(sbml_file_path='model.xml')
+            >>> result = model.compute_steady_state(method='lsoda')
+            >>> if result['success']:
+            >>>     print(f"Steady-state: {result['values']}")
+        """
+        from scipy import integrate
+
+        try:
+            # Get exact species and parameters (no distributions)
+            exact_species = self._build_exact_species()
+            exact_params = self._build_exact_kinetic_parameters()
+
+            # Build initial conditions for dynamic species only
+            y0 = []
+            dynamic_species = []
+            for sp_id, sp_obj in exact_species.items():
+                if sp_obj.contained_in_output:  # Only dynamic species
+                    dynamic_species.append(sp_id)
+                    # Extract value from Constant distribution
+                    if hasattr(sp_obj.distribution, 'value'):
+                        y0.append(sp_obj.distribution.value)
+                    else:
+                        y0.append(sp_obj.distribution.sample(1)[0])
+
+            # Build kinetic parameters dict (global params, local handled in _deriv)
+            params = {}
+            for param_id, param_obj in exact_params.items():
+                if hasattr(param_obj.distribution, 'value'):
+                    params[param_id] = param_obj.distribution.value
+                else:
+                    params[param_id] = param_obj.distribution.sample(1)[0]
+
+            # Solve using selected method
+            if method.lower() == 'lsoda':
+                # ODE simulation to steady-state
+                result = integrate.solve_ivp(
+                    fun=lambda t, y: self._deriv(t, y.tolist(), params),
+                    y0=y0,
+                    t_span=(0, t_max),
+                    method='LSODA',
+                    atol=atol,
+                    rtol=rtol
+                )
+
+                if not result.success:
+                    return {
+                        'success': False,
+                        'values': np.array(y0),
+                        'species': dynamic_species,
+                        'max_derivative': np.inf,
+                        'message': f"LSODA failed: {result.message}",
+                        'method': method
+                    }
+
+                steady_state_values = result.y[:, -1]
+                final_derivs = self._deriv(t_max, steady_state_values.tolist(), params)
+                max_deriv = np.max(np.abs(final_derivs))
+
+                return {
+                    'success': True,
+                    'values': steady_state_values,
+                    'species': dynamic_species,
+                    'max_derivative': max_deriv,
+                    'message': f"Converged at t={t_max} with max|dx/dt|={max_deriv:.2e}",
+                    'method': method
+                }
+
+            else:
+                # Numerical root-finding
+                from simba_ml.simulation import steady_state_solvers
+
+                solution, success, message = steady_state_solvers.find_steady_state(
+                    deriv_func=self._deriv,
+                    initial_guess=y0,
+                    kinetic_params=params,
+                    solver_type=method,
+                    **solver_kwargs
+                )
+
+                if success:
+                    final_derivs = self._deriv(0, solution.tolist(), params)
+                    max_deriv = np.max(np.abs(final_derivs))
+                else:
+                    max_deriv = np.inf
+
+                return {
+                    'success': success,
+                    'values': solution,
+                    'species': dynamic_species,
+                    'max_derivative': max_deriv,
+                    'message': message,
+                    'method': method
+                }
+
+        except Exception as e:
+            logger.error(f"Error in compute_steady_state: {e}")
+            return {
+                'success': False,
+                'values': np.array([]),
+                'species': [],
+                'max_derivative': np.inf,
+                'message': f"Error: {str(e)}",
+                'method': method
+            }

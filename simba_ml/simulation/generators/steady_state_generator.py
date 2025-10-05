@@ -37,7 +37,7 @@ class SteadyStateGenerator:
             raise ValueError("Series have different lengths.")
 
         return all(
-            math.isclose(series1[i], series2[i], rel_tol=1e-05)
+            math.isclose(series1.iloc[i], series2.iloc[i], rel_tol=1e-05)
             for i in range(len(series1))
         )
 
@@ -50,6 +50,9 @@ class SteadyStateGenerator:
         Returns:
             True if the signal has a steady state, False otherwise.
         """
+        # Check if signal has at least 2 rows to compare
+        if len(signal) < 2:
+            return False
         return self._is_similar(signal.iloc[-1], signal.iloc[-2])
 
     def __add_parameters_to_table(
