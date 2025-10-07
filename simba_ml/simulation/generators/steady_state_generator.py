@@ -92,32 +92,64 @@ class SteadyStateGenerator:
         Raises:
             ValueError: if the generated signal has no steady state.
         """
-        clean_signal = self.sm.get_clean_signal(
-            start_values=start_values, sample_id=sample_id
-        )
+        # Try LSODA time integration first
+        try:
+            clean_signal = self.sm.get_clean_signal(
+                start_values=start_values, sample_id=sample_id
+            )
 
-        for key in start_values["specieses"]:
-            start_values["specieses"][key][sample_id] = clean_signal[key].iloc[-1]
+            for key in start_values["specieses"]:
+                start_values["specieses"][key][sample_id] = clean_signal[key].iloc[-1]
 
-        clean_signal = self.sm.get_clean_signal(
-            start_values=start_values, sample_id=sample_id, deriv_noised=False
-        )
+            clean_signal = self.sm.get_clean_signal(
+                start_values=start_values, sample_id=sample_id, deriv_noised=False
+            )
 
-        if not self.__check_if_signal_has_steady_state(clean_signal):
-            raise ValueError("Signal has no steady state.")
+            if self.__check_if_signal_has_steady_state(clean_signal):
+                pertubation_std = 0.01
+                for key in start_values["specieses"]:
+                    start_values["specieses"][key][sample_id] = clean_signal[key].iloc[
+                        -1
+                    ] * random_generator.get_rng().normal(1, pertubation_std)
 
-        pertubation_std = 0.01
-        for key in start_values["specieses"]:
-            start_values["specieses"][key][sample_id] = clean_signal[key].iloc[
-                -1
-            ] * random_generator.get_rng().normal(1, pertubation_std)
+                pertubated_signal = self.sm.get_clean_signal(
+                    start_values=start_values, sample_id=sample_id
+                )
+                if self.__check_if_signal_has_steady_state(pertubated_signal):
+                    self.sm.apply_noisifier(clean_signal)
+                    return clean_signal.iloc[-1]
+        except Exception:
+            pass  # Fall through to bounded solver
 
-        pertubated_signal = self.sm.get_clean_signal(
-            start_values=start_values, sample_id=sample_id
-        )
-        if self.__check_if_signal_has_steady_state(pertubated_signal):
-            self.sm.apply_noisifier(clean_signal)
-            return clean_signal.iloc[-1]
+        # Fallback to bounded solver if LSODA fails
+        try:
+            from simba_ml.simulation import steady_state_solvers
+
+            # Get kinetic parameters for this sample
+            kinetic_params = {
+                name: param.get_at_timestamp(sample_id, 0.0)
+                for name, param in self.sm.kinetic_parameters.items()
+            }
+
+            # Get initial guess from species start values
+            dynamic_species = [sp for sp, obj in self.sm.specieses.items() if obj.contained_in_output]
+            initial_guess = [start_values["specieses"][sp_name][sample_id] for sp_name in dynamic_species]
+
+            # Use bounded solver
+            solution, success, message = steady_state_solvers.find_steady_state(
+                deriv_func=self.sm.deriv,
+                initial_guess=initial_guess,
+                kinetic_params=kinetic_params,
+                solver_type='bounded'
+            )
+
+            if success:
+                # Create result series from solution
+                result_dict = {sp_name: solution[i] for i, sp_name in enumerate(dynamic_species)}
+                return pd.Series(result_dict)
+        except Exception:
+            pass
+
         raise ValueError("Signal has no steady state.")
 
     def generate_signals(self, n: int = 100) -> pd.DataFrame:

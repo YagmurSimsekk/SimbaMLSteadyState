@@ -63,7 +63,8 @@ class Parser:
             'num_species': self.model.getNumSpecies(),
             'num_reactions': self.model.getNumReactions(),
             'num_parameters': self.model.getNumParameters(),
-            'num_compartments': self.model.getNumCompartments()
+            'num_compartments': self.model.getNumCompartments(),
+            'num_functions': self.model.getNumFunctionDefinitions()
         }
 
     def _parse_species(self):

@@ -75,7 +75,8 @@ class Parser:
             'num_parameters': self.model.getNumParameters(),
             'num_compartments': self.model.getNumCompartments(),
             'num_events': self.model.getNumEvents() if hasattr(self.model, 'getNumEvents') else 0,
-            'num_constraints': self.model.getNumConstraints() if hasattr(self.model, 'getNumConstraints') else 0
+            'num_constraints': self.model.getNumConstraints() if hasattr(self.model, 'getNumConstraints') else 0,
+            'num_functions': self.model.getNumFunctionDefinitions()
         }
 
     def _parse_species(self):

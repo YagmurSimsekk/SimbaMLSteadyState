@@ -88,6 +88,14 @@ class MainSBMLParser:
         """
         num_reactions = model.getListOfReactions().size()
         num_rules = model.getListOfRules().size()
+        num_functions = model.getListOfFunctionDefinitions().size()
+
+        # Check for function definitions (unsupported feature)
+        if num_functions > 0:
+            logger.warning(
+                f"Model contains {num_functions} function definition(s). "
+                f"Function definitions are not yet supported and will cause errors."
+            )
 
         # Check for rate rules (direct ODE specification)
         has_rate_rules = False

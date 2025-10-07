@@ -68,6 +68,17 @@ class SBMLSystemModel(system_model.SystemModel):
         fallback_name = Path(self.sbml_file_path).stem if self.sbml_file_path else 'SBML_Model'
         model_name = name or self.sbml_data['sbml_info'].get('model_name', fallback_name)
 
+        # Check for unsupported SBML features
+        num_functions = self.sbml_data.get('sbml_info', {}).get('num_functions', 0)
+        if num_functions > 0:
+            raise NotImplementedError(
+                f"SBML model '{model_name}' contains {num_functions} function definition(s), which are not yet "
+                f"supported by SimbaML. Function definitions are user-defined mathematical functions (like custom "
+                f"reaction rate laws) that require lambda expression parsing and argument substitution. "
+                f"Please select a different SBML model without function definitions. "
+                f"See docs/KNOWN_LIMITATIONS.md for details and implementation roadmap."
+            )
+
         # Build species and parameters from parsed data
         built_species = self._build_species(species_distributions)
         built_parameters = self._build_kinetic_parameters(parameter_distributions)
@@ -163,8 +174,33 @@ class SBMLSystemModel(system_model.SystemModel):
                 distribution=distribution
             )
 
-        # Note: Local parameters are NOT stored globally to avoid conflicts
-        # They are handled individually for each reaction during rate evaluation
+        # Add local parameters with unique names (reaction_id_param_id) to avoid conflicts
+        for reaction in self.sbml_data['reactions']:
+            kinetic_law = reaction.get('kinetic_law')
+            if kinetic_law and kinetic_law.get('parameters'):
+                for local_param in kinetic_law['parameters']:
+                    local_param_id = local_param['id']
+                    local_param_value = local_param.get('value', 1.0)
+
+                    # Create unique parameter name: reaction_id__param_id
+                    unique_param_name = f"{reaction['id']}__{local_param_id}"
+
+                    if unique_param_name in custom_distributions:
+                        distribution = custom_distributions[unique_param_name]
+                    else:
+                        # Default: Keep local parameters CONSTANT at SBML values
+                        # Rationale: Independent random sampling of many kinetic parameters creates
+                        # biologically impossible combinations that don't converge to steady-state.
+                        # For synthetic ML datasets, varying species initial conditions provides
+                        # sufficient diversity while maintaining model stability.
+                        #
+                        # Future enhancement: Implement correlated parameter sampling that maintains
+                        # biological relationships (e.g., scale all V_max together, scale all K_m together).
+                        distribution = distributions.Constant(local_param_value)
+
+                    params_dict[unique_param_name] = kinetic_parameters_module.ConstantKineticParameter(
+                        distribution=distribution
+                    )
 
         return params_dict
 
@@ -182,6 +218,21 @@ class SBMLSystemModel(system_model.SystemModel):
             params_dict[param_id] = kinetic_parameters_module.ConstantKineticParameter(
                 distribution=distribution
             )
+
+        # Add local parameters with unique names
+        for reaction in self.sbml_data['reactions']:
+            kinetic_law = reaction.get('kinetic_law')
+            if kinetic_law and kinetic_law.get('parameters'):
+                for local_param in kinetic_law['parameters']:
+                    local_param_id = local_param['id']
+                    local_param_value = local_param.get('value', 1.0)
+
+                    # Create unique parameter name: reaction_id__param_id
+                    unique_param_name = f"{reaction['id']}__{local_param_id}"
+                    distribution = distributions.Constant(local_param_value)
+                    params_dict[unique_param_name] = kinetic_parameters_module.ConstantKineticParameter(
+                        distribution=distribution
+                    )
 
         return params_dict
 
@@ -274,6 +325,24 @@ class SBMLSystemModel(system_model.SystemModel):
                         initial_value = sp_data['initial_amount']
                     species_conc[sp_id] = initial_value
 
+            # Evaluate assignment rules (algebraic equations for derived quantities)
+            # These must be computed BEFORE reaction rates since reactions may depend on them
+            for rule in self.sbml_data.get('rules', []):
+                if rule.get('type') == 'assignment':
+                    variable = rule.get('variable')
+                    formula = rule.get('formula') or rule.get('math')
+                    if variable and formula:
+                        try:
+                            value = self._evaluate_rate_formula(
+                                formula,
+                                species_conc,
+                                kinetic_params,
+                                {}
+                            )
+                            species_conc[variable] = value
+                        except Exception as e:
+                            logger.debug(f"Error evaluating assignment rule for {variable}: {e}")
+
             # Compute derivatives
             dydt = [0.0] * len(dynamic_species)
 
@@ -294,14 +363,23 @@ class SBMLSystemModel(system_model.SystemModel):
 
                 # Evaluate reaction rate
                 try:
-                    # Prepare local parameters (now using direct names)
+                    # Prepare local parameters
+                    # Local parameters are stored with unique names (reaction_id__param_id) in kinetic_params
+                    # but need to be available by their original names for formula evaluation
                     local_params = {}
                     if kinetic_law.get('parameters'):
                         for local_param in kinetic_law['parameters']:
                             param_name = local_param['id']
-                            if param_name in kinetic_params:
+                            unique_param_name = f"{reaction['id']}__{param_name}"
+
+                            # Check if this local parameter was sampled (exists in kinetic_params)
+                            if unique_param_name in kinetic_params:
+                                local_params[param_name] = kinetic_params[unique_param_name]
+                            elif param_name in kinetic_params:
+                                # Fallback: check if global parameter with same name exists
                                 local_params[param_name] = kinetic_params[param_name]
                             else:
+                                # Use default value from SBML
                                 local_params[param_name] = local_param.get('value', 1.0)
 
                     rate = self._evaluate_rate_formula(
