@@ -3,6 +3,7 @@ import json
 import os
 from simba_ml.sbml_parser.main_parser import MainSBMLParser, UnsupportedSBMLVersionError, SBMLParsingError
 from simba_ml.sbml_parser.ml_exporter import SBMLExporter
+from simba_ml.cli.utils import is_ode_ready
 
 @click.command()
 @click.argument("file", type=click.Path(exists=True))
@@ -57,12 +58,21 @@ def parse_sbml(file, verbose, species_limit, reactions_limit, export, output_dir
             click.echo(f"  • Constraints: {info['num_constraints']}")
         click.echo()
 
-        # ODE suitability check
-        has_kinetic_laws = any(r.get('kinetic_law') is not None for r in result['reactions'])
-        if result['reactions'] and not has_kinetic_laws:
-            click.echo(click.style("⚠️  Warning:", fg='yellow', bold=True) + " No kinetic laws found - this model may not be suitable for ODE simulation")
-        elif result['reactions'] and has_kinetic_laws:
-            click.echo(click.style("✅ ODE Ready:", fg='green', bold=True) + " Model contains kinetic laws suitable for ODE simulation")
+        # ODE suitability check (checks both kinetic laws AND rate rules)
+        ode_ready = is_ode_ready(result)
+        if ode_ready:
+            # Determine what makes it ODE-ready
+            has_kinetic_laws = any(r.get('kinetic_law') is not None for r in result['reactions'])
+            has_rate_rules = any(rule.get('type') == 'rate' for rule in result.get('rules', []))
+
+            if has_kinetic_laws and has_rate_rules:
+                click.echo(click.style("✅ ODE Ready:", fg='green', bold=True) + " Model contains kinetic laws and rate rules")
+            elif has_rate_rules:
+                click.echo(click.style("✅ ODE Ready:", fg='green', bold=True) + " Model contains rate rules (rule-based ODE)")
+            else:
+                click.echo(click.style("✅ ODE Ready:", fg='green', bold=True) + " Model contains kinetic laws (reaction-based ODE)")
+        else:
+            click.echo(click.style("⚠️  Warning:", fg='yellow', bold=True) + " No kinetic laws or rate rules found - not suitable for ODE simulation")
         click.echo()
 
         # Sample species
