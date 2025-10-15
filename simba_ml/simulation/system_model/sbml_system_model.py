@@ -204,6 +204,98 @@ class SBMLSystemModel(system_model.SystemModel):
 
         return params_dict
 
+    @staticmethod
+    def create_species_distributions(
+        sbml_data: dict,
+        species_sigma: float = 0.3
+    ) -> dict:
+        """Create LogNormal distributions for species initial concentrations.
+
+        Args:
+            sbml_data: Parsed SBML data from MainSBMLParser
+            species_sigma: Variation level for initial concentrations (0 = constant)
+
+        Returns:
+            Dictionary mapping species names to Distribution objects
+        """
+        species_distributions = {}
+
+        for sp_data in sbml_data['species']:
+            sp_id = sp_data['id']
+
+            # Get initial value
+            initial_value = 1.0
+            if sp_data.get('initial_concentration') is not None:
+                initial_value = sp_data['initial_concentration']
+            elif sp_data.get('initial_amount') is not None:
+                initial_value = sp_data['initial_amount']
+
+            # Create distribution
+            if initial_value > 0 and species_sigma > 0:
+                species_distributions[sp_id] = distributions.LogNormalDistribution(
+                    mu=np.log(initial_value),
+                    sigma=species_sigma
+                )
+            else:
+                # Can't have LogNormal around zero
+                species_distributions[sp_id] = distributions.Constant(1e-6)
+
+        return species_distributions
+
+    @staticmethod
+    def create_lognormal_distributions(
+        sbml_data: dict,
+        global_sigma: float = 0.0,
+        local_sigma: float = 0.0
+    ) -> dict:
+        """Create LogNormal distributions for all parameters from SBML data.
+
+        This helper method centralizes the logic for building parameter distributions
+        with specified variation levels, avoiding code duplication across generators.
+
+        Args:
+            sbml_data: Parsed SBML data from MainSBMLParser
+            global_sigma: Variation level for global parameters (0 = constant)
+            local_sigma: Variation level for local parameters (0 = constant)
+
+        Returns:
+            Dictionary mapping parameter names to Distribution objects
+        """
+        param_distributions = {}
+
+        # Global parameters
+        for param_data in sbml_data['parameters']:
+            param_id = param_data['id']
+            param_value = param_data.get('value', 1.0)
+
+            if param_value > 0 and global_sigma > 0:
+                param_distributions[param_id] = distributions.LogNormalDistribution(
+                    mu=np.log(param_value),
+                    sigma=global_sigma
+                )
+            else:
+                param_distributions[param_id] = distributions.Constant(param_value)
+
+        # Local parameters (reaction-specific)
+        for reaction in sbml_data['reactions']:
+            kinetic_law = reaction.get('kinetic_law')
+            if kinetic_law and kinetic_law.get('parameters'):
+                for local_param in kinetic_law['parameters']:
+                    param_id = local_param['id']
+                    param_value = local_param.get('value', 1.0)
+                    # Use unique name: reaction_id__param_id
+                    unique_name = f"{reaction['id']}__{param_id}"
+
+                    if param_value > 0 and local_sigma > 0:
+                        param_distributions[unique_name] = distributions.LogNormalDistribution(
+                            mu=np.log(param_value),
+                            sigma=local_sigma
+                        )
+                    else:
+                        param_distributions[unique_name] = distributions.Constant(param_value)
+
+        return param_distributions
+
     def _build_exact_kinetic_parameters(self) -> dict[str, kinetic_parameters_module.KineticParameter]:
         """Build kinetic parameters using exact SBML values (no distributions)."""
         params_dict = {}

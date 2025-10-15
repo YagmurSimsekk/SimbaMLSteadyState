@@ -57,8 +57,14 @@ class LogNormalDistribution:
         Returns:
             Samples of the distribution, sampled from a hypercube.
         """
+        import numpy as np
+
         p = [
             random_generator.get_rng().uniform(low=i / n, high=(i + 1) / n)
             for i in range(n)
         ]
-        return stats.lognorm.ppf(p, 1, self.mu, self.sigma)
+        # Correct parameterization for scipy's lognorm:
+        # - s (shape) = sigma (std dev in log-space)
+        # - loc (location) = 0 (no shift, lognormal is always positive)
+        # - scale = exp(mu) (median of the distribution)
+        return stats.lognorm.ppf(p, s=self.sigma, loc=0, scale=np.exp(self.mu))
