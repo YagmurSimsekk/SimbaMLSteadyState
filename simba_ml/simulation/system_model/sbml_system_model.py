@@ -110,12 +110,8 @@ class SBMLSystemModel(system_model.SystemModel):
             sp_id = sp_data['id']
             sp_name = sp_data.get('name', sp_id)
 
-            # Get initial value
-            initial_value = 1.0
-            if sp_data.get('initial_concentration') is not None:
-                initial_value = sp_data['initial_concentration']
-            elif sp_data.get('initial_amount') is not None:
-                initial_value = sp_data['initial_amount']
+            # This handles concentration/amount conversion with compartment volumes
+            initial_value = sp_data.get('normalized_concentration', 1.0)
 
             # Create distribution for initial values
             if sp_id in custom_distributions:
@@ -212,7 +208,7 @@ class SBMLSystemModel(system_model.SystemModel):
         """Create LogNormal distributions for species initial concentrations.
 
         Args:
-            sbml_data: Parsed SBML data from MainSBMLParser
+            sbml_data: Parsed SBML data from MainSBMLParser (with SBMLExporter normalization)
             species_sigma: Variation level for initial concentrations (0 = constant)
 
         Returns:
@@ -223,12 +219,8 @@ class SBMLSystemModel(system_model.SystemModel):
         for sp_data in sbml_data['species']:
             sp_id = sp_data['id']
 
-            # Get initial value
-            initial_value = 1.0
-            if sp_data.get('initial_concentration') is not None:
-                initial_value = sp_data['initial_concentration']
-            elif sp_data.get('initial_amount') is not None:
-                initial_value = sp_data['initial_amount']
+            # This handles concentration/amount conversion with compartment volumes
+            initial_value = sp_data.get('normalized_concentration', 1.0)
 
             # Create distribution
             if initial_value > 0 and species_sigma > 0:
@@ -335,12 +327,7 @@ class SBMLSystemModel(system_model.SystemModel):
         for sp_data in self.sbml_data['species']:
             sp_id = sp_data['id']
 
-            # Get exact initial value
-            initial_value = 1.0
-            if sp_data.get('initial_concentration') is not None:
-                initial_value = sp_data['initial_concentration']
-            elif sp_data.get('initial_amount') is not None:
-                initial_value = sp_data['initial_amount']
+            initial_value = sp_data.get('normalized_concentration', 1.0)
 
             # Use Constant distribution for exact values
             initial_distribution = distributions.Constant(initial_value)

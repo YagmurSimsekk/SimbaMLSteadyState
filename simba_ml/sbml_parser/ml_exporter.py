@@ -240,8 +240,9 @@ class SBMLExporter:
                 sp['units_type'] = 'amount_converted'
 
             else:
-                # No initial condition specified
-                sp['normalized_concentration'] = 0.0
+                # No initial condition specified - use small non-zero value
+                # to avoid division by zero in rate equations
+                sp['normalized_concentration'] = 1e-6
                 sp['units_type'] = 'default'
 
             # Add units information from parsed SBML
