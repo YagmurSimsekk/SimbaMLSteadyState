@@ -20,15 +20,21 @@ class SteadyStateGenerator:
         """
         self.sm = sm
 
-    def _is_similar(self, series1: pd.Series, series2: pd.Series) -> bool:
-        """Checks if two series are similar.
+    def _is_similar(self, series1: pd.Series, series2: pd.Series,
+                    abs_tol: float = 1e-8, rel_tol: float = 1e-4) -> bool:
+        """Checks if two series are similar using combined absolute and relative tolerance.
+
+        Uses a robust tolerance check that works for both small values (near zero)
+        and large values: |a - b| <= abs_tol OR |a - b| / max(|a|, |b|) <= rel_tol
 
         Args:
             series1: The first series.
             series2: The second series.
+            abs_tol: Absolute tolerance threshold (default 1e-8, for near-zero values)
+            rel_tol: Relative tolerance threshold (default 1e-4, for proportional differences)
 
         Returns:
-            True if the series are similar, False otherwise.
+            True if all values are similar within tolerance, False otherwise.
 
         Raises:
             ValueError: if the series have different lengths.
@@ -36,24 +42,55 @@ class SteadyStateGenerator:
         if len(series1) != len(series2):
             raise ValueError("Series have different lengths.")
 
-        return all(
-            math.isclose(series1.iloc[i], series2.iloc[i], rel_tol=1e-05)
-            for i in range(len(series1))
-        )
+        for i in range(len(series1)):
+            val1 = series1.iloc[i]
+            val2 = series2.iloc[i]
+
+            # Check absolute tolerance first (good for values near zero)
+            abs_diff = abs(val1 - val2)
+            if abs_diff <= abs_tol:
+                continue
+
+            # Check relative tolerance (good for large values)
+            max_abs = max(abs(val1), abs(val2))
+            if max_abs > 0:
+                rel_diff = abs_diff / max_abs
+                if rel_diff <= rel_tol:
+                    continue
+
+            # Neither tolerance satisfied
+            return False
+
+        return True
 
     def __check_if_signal_has_steady_state(self, signal: pd.DataFrame) -> bool:
-        """Checks if a signal has a steady state.
+        """Checks if a signal has reached a steady state.
+
+        Verifies convergence by checking that the last 10 time points form a stable
+        plateau - i.e., all consecutive pairs are similar. This is more robust than
+        comparing just 2 points, as it rules out accidental similarity.
 
         Args:
-            signal: The signal.
+            signal: The signal (time series DataFrame).
 
         Returns:
-            True if the signal has a steady state, False otherwise.
+            True if the signal has reached steady state (last 10 points are stable),
+            False otherwise.
         """
-        # Check if signal has at least 2 rows to compare
-        if len(signal) < 2:
+        # Need at least 11 rows to check last 10 points
+        if len(signal) < 11:
             return False
-        return self._is_similar(signal.iloc[-1], signal.iloc[-2])
+
+        # Get the last 10 time points
+        last_10_points = signal.iloc[-10:]
+
+        # Check that all consecutive pairs are similar
+        # This ensures stability across multiple timesteps, not just 2
+        for i in range(len(last_10_points) - 1):
+            if not self._is_similar(last_10_points.iloc[i], last_10_points.iloc[i+1]):
+                return False
+
+        return True
 
     def __add_parameters_to_table(
         self, start_values: dict[str, typing.Any], signals_df: pd.DataFrame

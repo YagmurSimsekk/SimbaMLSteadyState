@@ -84,6 +84,19 @@ class SBMLSystemModel(system_model.SystemModel):
         built_parameters = self._build_kinetic_parameters(parameter_distributions)
         built_deriv = self._build_derivative_function()
 
+        # Validate that model has at least one dynamic species
+        dynamic_species_count = sum(1 for sp in built_species.values() if sp.contained_in_output)
+        if dynamic_species_count == 0:
+            raise ValueError(
+                f"SBML model '{model_name}' has no dynamic species to simulate. All {len(built_species)} species "
+                f"are marked as boundary conditions or constants, making this model unsuitable for steady-state "
+                f"prediction tasks. A model must have at least one species with `boundary_condition=False` and "
+                f"`constant=False` to generate meaningful steady-state data. "
+                f"\n\nPossible fixes:\n"
+                f"1. Select a different SBML model that contains dynamic species\n"
+                f"2. Check the SBML file to ensure species are properly defined as boundary condition = false"
+            )
+
         # Initialize parent SystemModel with required parameters
         super().__init__(
             name=model_name,
