@@ -219,12 +219,28 @@ class Parser:
         if hasattr(self.model, 'getNumInitialAssignments'):
             for i in range(self.model.getNumInitialAssignments()):
                 assignment = self.model.getInitialAssignment(i)
+
+                # Safely get formula - some SBML files may not have this method
+                formula = None
+                if hasattr(assignment, 'isSetFormula') and assignment.isSetFormula():
+                    formula = assignment.getFormula()
+
+                # Safely get math expression
+                math_expr = None
+                if hasattr(assignment, 'isSetMath') and assignment.isSetMath():
+                    math_expr = formulaToString(assignment.getMath())
+
+                # Safely get SBO term
+                sbo_term = None
+                if hasattr(assignment, 'isSetSBOTerm') and assignment.isSetSBOTerm():
+                    sbo_term = assignment.getSBOTermID()
+
                 assign_data = {
                     'symbol': assignment.getSymbol(),
-                    'formula': assignment.getFormula() if assignment.isSetFormula() else None,
-                    'math': formulaToString(assignment.getMath()) if assignment.isSetMath() else None,
+                    'formula': formula,
+                    'math': math_expr,
                     'notes': self._get_notes(assignment),
-                    'sbo_term': assignment.getSBOTermID() if assignment.isSetSBOTerm() else None
+                    'sbo_term': sbo_term
                 }
                 assignments_list.append(assign_data)
 

@@ -234,13 +234,29 @@ class Parser:
 
         for i in range(self.model.getNumInitialAssignments()):
             assignment = self.model.getInitialAssignment(i)
+
+            # Safely get math expression
+            math_expr = None
+            if hasattr(assignment, 'isSetMath') and assignment.isSetMath():
+                math_expr = formulaToString(assignment.getMath())
+
+            # Safely get SBO term
+            sbo_term = None
+            if hasattr(assignment, 'isSetSBOTerm') and assignment.isSetSBOTerm():
+                sbo_term = assignment.getSBOTermID()
+
+            # Safely get MetaId
+            metaid = None
+            if hasattr(assignment, 'isSetMetaId') and assignment.isSetMetaId():
+                metaid = assignment.getMetaId()
+
             assign_data = {
                 'symbol': assignment.getSymbol(),
-                'formula': formulaToString(assignment.getMath()) if assignment.isSetMath() else None,
-                'math': formulaToString(assignment.getMath()) if assignment.isSetMath() else None,
+                'formula': math_expr,
+                'math': math_expr,
                 'notes': self._get_notes(assignment),
-                'sbo_term': assignment.getSBOTermID() if assignment.isSetSBOTerm() else None,
-                'metaid': assignment.getMetaId() if assignment.isSetMetaId() else None
+                'sbo_term': sbo_term,
+                'metaid': metaid
             }
             assignments_list.append(assign_data)
 

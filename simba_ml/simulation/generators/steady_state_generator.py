@@ -13,12 +13,37 @@ class SteadyStateGenerator:
     """Defines how to generate signals from a PredictionTask."""
 
     def __init__(self, sm: system_model_interface.SystemModelInterface):
-        """Initializes the `PredictionTaskBuilder`.
+        """Initializes the `SteadyStateGenerator`.
 
         Args:
             sm: A `SystemModel`, for which the signals should be built.
+
+        Raises:
+            ValueError: If the model cannot generate a valid steady state (e.g., ODE solver failure,
+                       all species are boundary conditions, or malformed SBML).
         """
         self.sm = sm
+
+        # Validate that ODE solver works on this model by attempting one test sample
+        # This catches issues like malformed SBML files, broken derivative functions, etc.
+        try:
+            start_vals = sm.sample_start_values_from_hypercube(1)
+            _ = self.__generate_steady_state(start_vals, 0)
+        except ValueError as e:
+            # Re-raise ValueError (likely "Signal has no steady state")
+            raise ValueError(
+                f"Model '{sm.name}' failed ODE solver validation during initialization. "
+                f"This typically means:\n"
+                f"1. SBML file is malformed (check annotation elements)\n"
+                f"2. All species are marked as boundary conditions (use a different model)\n"
+                f"3. ODE system doesn't reach steady state with current solver settings\n"
+                f"\nOriginal error: {e}"
+            ) from e
+        except Exception as e:
+            # Catch any other unexpected errors
+            raise ValueError(
+                f"Model '{sm.name}' failed initialization validation: {type(e).__name__}: {e}"
+            ) from e
 
     def _is_similar(self, series1: pd.Series, series2: pd.Series,
                     abs_tol: float = 1e-8, rel_tol: float = 1e-4) -> bool:
